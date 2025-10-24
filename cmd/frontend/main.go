@@ -34,12 +34,16 @@ var rootCmd = &cobra.Command{
 				TestType: target.Options.TestType,
 				Platform: "go",
 			})
+			if err != nil {
+				return err
+			}
 
-			fmt.Println()
-			fmt.Println()
-			fmt.Println(result.GeneratedTest, err)
-			fmt.Println()
-			fmt.Println()
+			// fmt.Println()
+			// fmt.Println()
+			// fmt.Println(target)
+			// fmt.Println()
+			// fmt.Println()
+			os.WriteFile(outputPath, []byte(result.GeneratedTest), 0644)
 		}
 
 		return nil
