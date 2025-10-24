@@ -1,0 +1,64 @@
+basePath: /
+definitions:
+  server.GenerateContext:
+    properties:
+      user_code:
+        type: string
+    type: object
+  server.Generated:
+    properties:
+      test_code:
+        type: string
+    type: object
+  server.Request:
+    properties:
+      api_key:
+        type: string
+      context:
+        $ref: '#/definitions/server.GenerateContext'
+      id:
+        type: string
+      provider:
+        type: string
+    required:
+    - provider
+    type: object
+  server.Response:
+    properties:
+      generated:
+        $ref: '#/definitions/server.Generated'
+      id:
+        type: string
+    type: object
+info:
+  contact:
+    email: iauglov@gmail.com
+    name: API Support
+    url: http://www.swagger.io/support
+  termsOfService: http://swagger.io/terms/
+  title: Testifai backend
+  version: "1.0"
+paths:
+  /generate:
+    post:
+      consumes:
+      - application/json
+      description: Метод генерирует и возвращает тесты
+      parameters:
+      - description: Реквест
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/server.Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/server.Response'
+      summary: Generate tests
+      tags:
+      - Generator
+swagger: "2.0"
