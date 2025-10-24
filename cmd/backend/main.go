@@ -32,6 +32,7 @@ func main() {
 		promptBuilderSrv,
 		gemini.New(),
 		openai_compatible.New("OpenAI", "https://api.openai.com/v1/chat/completions", "gpt-4o"),
+		openai_compatible.New("LLM7GPT5", "https://api.llm7.io/v1/chat/completions", "gpt-5-mini"),
 	)
 	if err != nil {
 		log.Fatal(err)
