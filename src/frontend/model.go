@@ -10,6 +10,10 @@ const (
 	SuiteTestType TestType = "suite"
 )
 
+func (t TestType) String() string {
+	return string(t)
+}
+
 const (
 	OpenAi Provider = "openai"
 )
@@ -25,4 +29,8 @@ type Context struct {
 
 type TestifyInstructions struct {
 	Type TestType
+}
+
+type TestGenResponse struct {
+	TestedCode string
 }

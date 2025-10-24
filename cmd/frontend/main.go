@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
+	"github.com/myjupyter/testifai/pkg/path"
 	"github.com/myjupyter/testifai/pkg/vcs"
+	"github.com/myjupyter/testifai/src/frontend"
 	"github.com/myjupyter/testifai/src/frontend/parser"
 	"github.com/spf13/cobra"
 )
@@ -23,8 +24,6 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		// TODO
 
 		return nil
 	},
@@ -53,14 +52,14 @@ provider:
 }
 
 func main() {
-	rootCmd.Flags().StringVarP(&testType, "type", "t", "xunit", "Type of test (xunit|table|suite)")
-	rootCmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output path")
+	rootCmd.Flags().StringVarP(&testType, "type", "t", frontend.XUnitTestType.String(), "Type of test (xunit|table|suite)")
 	rootCmd.Flags().StringVarP(&funcName, "func", "f", "", "Specific unction/method name to test")
 
-	fname := os.Getenv("GOFILE")
-	dirPath, _ := os.Getwd()
+	rootCmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output path")
+	outputPath = path.GetOutFilepath(outputPath)
 
-	rootCmd.Flags().StringVarP(&fileName, "file", "p", filepath.Join(dirPath, fname), "Specific file to test")
+	rootCmd.Flags().StringVarP(&fileName, "file", "p", "", "Specific file to test")
+	fileName = path.GetInFilepath(fileName)
 
 	rootCmd.AddCommand(initCmd)
 	if err := rootCmd.Execute(); err != nil {
