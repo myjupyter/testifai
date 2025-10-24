@@ -1,15 +1,30 @@
 ### Objective
+Your task is to generate only test code for the provided user code.
+The output must be pure, compilable test code, without explanations, markdown formatting, or code fences.
 
-- Your task is to generate tests for the provided code. The output must be only the test code, without any additional explanations, comments, or messages.
+### Input
+The following is the user code for which tests should be generated:
+{{ .UserCode }}
 
-### Provide code
+### Rules
+* Do not include triple backticks or language identifiers in the output.
+* Do not copy, quote, restate, or repeat any part of the user’s code — including functions, structs, classes, constants, interfaces, or type definitions.
+* **Crucially, never redefine any `struct` or `interface` from the user's code. The test code must assume it is in the same package and already has access to all exported and unexported types. The generated code must not contain `type T struct { ... }` or `type I interface { ... }` declarations.**
+* Do not generate mock functions or placeholder implementations.
+* Use only the functions, methods, and types that exist in the provided user code.
+* Preserve the exact package name from the user code (e.g., if it contains package test, begin the test with package test).
+* Use only the standard testing framework** for {{ .Language }} (e.g., testing in Go, unittest in Python, JUnit in Java, pytest for Python if typical).
+* Include only necessary imports required for running the tests (no unused imports).
+* Output must be valid, compilable {{ .Language }} code that runs the specified {{ .TestType }} tests.
+* The generated tests must aim for 100% coverage and achieve at least 95% coverage of all logical branches, edge cases, and return paths.
+* Begin output with a checklist-style comment (e.g. // ✅ Tests for ..., # ✅ Tests for ..., etc.)
+* Produce only the test code — no markdown, explanations, or additional text.
 
-Here is the code in `{{ .TestType}}` for which tests need to be generated:
-
-```{{ .Language}}
-{{ .UserCode}}
-```
-
-### Output
-- Generate `{{ .TestType}}` tests in `{{ .Language}}`. The output must be valid, compilable code. Do not include any text other than the test code itself.
-- Output valid {{ .Language}} code only: begin with a checklist ({{ .Language}} comment style), then provide all imports, type stubs, and required tests.
+### Output Format
+* Start with a checklist-style comment (e.g. // ✅ Tests for countWords).
+* Then include only:
+    * the correct package declaration (matching the user code),
+    * minimal imports required for standard testing,
+    * and complete test functions covering all logical branches and edge cases.
+* The output must be ready to execute as a standalone test file for {{ .TestType }} tests in {{ .Language }}.
+* Never include or restate any of the user’s original code.
