@@ -4,6 +4,7 @@ import (
 	"testifai/api"
 	"testifai/src/backend/config"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -17,6 +18,9 @@ type Server struct {
 
 func NewServer(cfg *config.Config, handler *Handler) *Server {
 	engine := gin.Default()
+	engine.Use(gin.Recovery()).
+		Use(gin.Logger()).
+		Use(cors.Default())
 	return &Server{
 		cfg:     cfg,
 		engine:  engine,
@@ -40,6 +44,10 @@ func (s *Server) registerHandlers() error {
 
 func (s *Server) handleSwagger() {
 	api.SwaggerInfo.BasePath = "/"
-	api.SwaggerInfo.Host = s.cfg.Host + s.cfg.ListenAddr
+	port := s.cfg.ListenAddr
+	if len(port) > 0 && port[0] == ':' {
+		port = port[1:]
+	}
+	api.SwaggerInfo.Host = s.cfg.Host + ":" + port
 	s.engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 }
