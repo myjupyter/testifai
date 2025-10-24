@@ -16,7 +16,6 @@ import (
 type RequestData struct {
 	Host     string
 	UserCode string
-	Token    string
 	Provider string
 	TestType string
 	APIKey   string
