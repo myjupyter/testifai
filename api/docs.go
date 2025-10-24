@@ -77,9 +77,6 @@ const docTemplate = `{
         },
         "server.Request": {
             "type": "object",
-            "required": [
-                "provider"
-            ],
             "properties": {
                 "api_key": {
                     "type": "string"
@@ -111,9 +108,6 @@ const docTemplate = `{
         },
         "server.Testifai": {
             "type": "object",
-            "required": [
-                "test_type"
-            ],
             "properties": {
                 "test_type": {
                     "type": "string"
