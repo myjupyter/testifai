@@ -1,0 +1,9 @@
+services:
+  backend:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    command: "./api"
+    ports:
+      - "6667:6667"
+    restart: unless-stopped
