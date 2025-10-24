@@ -30,7 +30,7 @@
   ],
   "dependencies": {},
   "devDependencies": {
-    "@changesets/cli": "^2.29.5",
+    "@changesets/cli": "^2.29.7",
     "@changesets/get-github-info": "^0.6.0",
     "@eslint/js": "^9.38.0",
     "@types/node": "^24.9.1",
