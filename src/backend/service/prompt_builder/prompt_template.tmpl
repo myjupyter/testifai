@@ -1,0 +1,15 @@
+### Objective
+
+- Your task is to generate tests for the provided code. The output must be only the test code, without any additional explanations, comments, or messages.
+
+### Provide code
+
+Here is the code in `{{ .TestType}}` for which tests need to be generated:
+
+```{{ .Language}}
+{{ .UserCode}}
+```
+
+### Output
+- Generate `{{ .TestType}}` tests in `{{ .Language}}`. The output must be valid, compilable code. Do not include any text other than the test code itself.
+- Output valid {{ .Language}} code only: begin with a checklist ({{ .Language}} comment style), then provide all imports, type stubs, and required tests.

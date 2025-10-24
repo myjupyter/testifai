@@ -3,11 +3,13 @@ package openai_compatible
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
+
 	"time"
+
+	"github.com/myjupyter/testifai/src/backend/app/model"
 )
 
 const (
@@ -15,34 +17,27 @@ const (
 )
 
 type Client struct {
-	apiKey   string
-	endpoint string
-	client   *http.Client
+	providerName string
+	endpoint     string
+	model        string
+	client       *http.Client
 }
 
-func NewClient(apiKey, endpoint string) *Client {
+func New(providerName, endpoint, model string) *Client {
 	return &Client{
-		apiKey:   apiKey,
-		endpoint: endpoint,
-		client:   &http.Client{Timeout: 60 * time.Second},
+		providerName: providerName,
+		endpoint:     endpoint,
+		model:        model,
+		client:       &http.Client{Timeout: 60 * time.Second},
 	}
-}
-
-// AnalyzeResult содержит результат анализа AI и usage info
-type AnalyzeResult struct {
-	Content          string
-	Model            string
-	PromptTokens     int
-	CompletionTokens int
-	TotalTokens      int
 }
 
 // Строгие структуры для парсинга ответа OpenAI
 
 type openAIUsage struct {
-	PromptTokens     int `json:"prompt_tokens"`
-	CompletionTokens int `json:"completion_tokens"`
-	TotalTokens      int `json:"total_tokens"`
+	PromptTokens     int64 `json:"prompt_tokens"`
+	CompletionTokens int64 `json:"completion_tokens"`
+	TotalTokens      int64 `json:"total_tokens"`
 }
 
 type openAIChoice struct {
@@ -57,35 +52,25 @@ type openAIResponse struct {
 	Choices []openAIChoice `json:"choices"`
 }
 
-func (c *Client) Analyze(ctx context.Context, message string, imageDatas [][]byte) (*AnalyzeResult, error) {
+func (c *Client) Generate(ctx context.Context, form model.AiGenerateForm) (model.AiGenerateResult, error) {
 	content := []map[string]interface{}{}
 
-	if message != "" {
-		content = append(content, map[string]interface{}{
-			"type": "text",
-			"text": message,
-		})
-	}
-	for _, imageData := range imageDatas {
-		if len(imageData) == 0 {
-			continue
-		}
-		b64 := base64.StdEncoding.EncodeToString(imageData)
-		content = append(content, map[string]interface{}{
-			"type": "image_url",
-			"image_url": map[string]string{
-				"url": "data:image/png;base64," + b64,
-			},
-		})
-	}
+	content = append(content, map[string]interface{}{
+		"type": "text",
+		"text": form.Prompt,
+	})
 
 	messages := []map[string]interface{}{
-		// {"role": "system", "content": SystemPrompt},
+
 		{"role": "user", "content": content},
 	}
 
+	if form.SystemPrompt != "" {
+		messages = append(messages, map[string]interface{}{"role": "system", "content": form.SystemPrompt})
+	}
+
 	payload := map[string]interface{}{
-		"model":             "gpt-4o",
+		"model":             c.model,
 		"stream":            false,
 		"messages":          messages,
 		"temperature":       0.2,
@@ -97,37 +82,40 @@ func (c *Client) Analyze(ctx context.Context, message string, imageDatas [][]byt
 
 	reqBody, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
+		return model.AiGenerateResult{}, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(context.Background(), "POST", c.endpoint, bytes.NewBuffer(reqBody))
+	req, err := http.NewRequestWithContext(ctx, "POST", c.endpoint, bytes.NewBuffer(reqBody))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return model.AiGenerateResult{}, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	req.Header.Set("Authorization", "Bearer "+form.ApiKey)
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to make request: %w", err)
+		return model.AiGenerateResult{}, fmt.Errorf("failed to make request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	var result openAIResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+		return model.AiGenerateResult{}, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	if len(result.Choices) == 0 {
-		return nil, fmt.Errorf("no choices in response")
+		return model.AiGenerateResult{}, fmt.Errorf("no choices in response")
 	}
 
-	return &AnalyzeResult{
+	return model.AiGenerateResult{
 		Content:          result.Choices[0].Message.Content,
 		Model:            result.Model,
 		PromptTokens:     result.Usage.PromptTokens,
 		CompletionTokens: result.Usage.CompletionTokens,
 		TotalTokens:      result.Usage.TotalTokens,
 	}, nil
+}
+func (c *Client) ProviderName() string {
+	return c.providerName
 }

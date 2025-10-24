@@ -59,6 +59,9 @@ const docTemplate = `{
         "server.GenerateContext": {
             "type": "object",
             "properties": {
+                "platform": {
+                    "type": "string"
+                },
                 "user_code": {
                     "type": "string"
                 }
@@ -89,6 +92,9 @@ const docTemplate = `{
                 },
                 "provider": {
                     "type": "string"
+                },
+                "testifai": {
+                    "$ref": "#/definitions/server.Testifai"
                 }
             }
         },
@@ -99,6 +105,17 @@ const docTemplate = `{
                     "$ref": "#/definitions/server.Generated"
                 },
                 "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "server.Testifai": {
+            "type": "object",
+            "required": [
+                "test_type"
+            ],
+            "properties": {
+                "test_type": {
                     "type": "string"
                 }
             }

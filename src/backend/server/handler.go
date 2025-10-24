@@ -1,11 +1,21 @@
 package server
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
 
-type Handler struct{}
+	"github.com/gin-gonic/gin"
+	"github.com/myjupyter/testifai/src/backend/app/model"
+	"github.com/myjupyter/testifai/src/backend/service/router"
+)
 
-func NewHandler() *Handler {
-	return &Handler{}
+type Handler struct {
+	routerSrv *router.Service
+}
+
+func NewHandler(routerSrv *router.Service) *Handler {
+	return &Handler{
+		routerSrv: routerSrv,
+	}
 }
 
 // Generate godoc
@@ -19,22 +29,58 @@ func NewHandler() *Handler {
 // @Success 200 {object} Response
 // @Router /generate [post]
 func (h *Handler) Handle(c *gin.Context) {
-	c.JSON(200, gin.H{"Hello": "World"})
+	req := Request{}
+	if err := c.BindJSON(&req); err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	generate, err := h.routerSrv.Generate(c, model.GenerateRequest{
+		ApiKey:   req.ApiKey,
+		Provider: req.Provider,
+		Id:       req.Id,
+		Context: model.GenerateContext{
+			UserCode: req.Context.UserCode,
+			Plarform: req.Context.Plarform,
+		},
+		Testifai: model.Testifai{
+			TestType: testTypeTo(req.Testifai.TestType),
+		},
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"err": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, Response{
+		Id: req.Id,
+		Generated: Generated{
+			TestCode: generate.Content,
+		},
+	})
+
+}
+
+func testTypeTo(strTestType string) model.TestType {
+	return model.TestType(strTestType)
 }
 
 type Request struct {
 	ApiKey   string          `json:"api_key"`
-	Provider string          `json:"provider" binding:"required,oneOf=openAi gemini"`
+	Provider string          `json:"provider" binding:"required"`
 	Id       string          `json:"id"`
 	Context  GenerateContext `json:"context"`
+	Testifai Testifai        `json:"testifai"`
 }
 
 type GenerateContext struct {
 	UserCode string `json:"user_code"`
+	Plarform string `json:"platform"`
 }
 
 type Testifai struct {
-	TestType string `json:"test_type" binding:"required,oneOf=xunit table suite"`
+	TestType string `json:"test_type" binding:"required"`
 }
 
 type Response struct {
