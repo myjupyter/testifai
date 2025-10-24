@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -56,21 +55,26 @@ func ParseFile(
 		return nil, err
 	}
 
+	currentOptions := TestifyOptions{
+		TestFunc:   funcName,
+		TestType:   testType,
+		OutputFile: output,
+	}
+
 	var targets []Target
 	ast.Inspect(f, func(n ast.Node) bool {
 		switch x := n.(type) {
 		case *ast.FuncDecl:
-			if isSpecificFunction && x.Name.Name != funcName {
-				return true
-			}
 
 			options, isOverriden := OverrideTestify(x.Doc)
-			if !isOverriden {
-				options = TestifyOptions{
-					TestFunc:   x.Name.Name,
-					TestType:   testType,
-					OutputFile: output,
-				}
+			if isOverriden && options != currentOptions {
+				return true
+			}
+			if isSpecificFunction && options.TestFunc != funcName {
+				return true
+			}
+			if isSpecificFunction && options.TestFunc != funcName {
+				options = currentOptions
 			}
 
 			var target Target
@@ -80,15 +84,13 @@ func ParseFile(
 			end := tf.Offset(x.End())
 
 			target.Code = string(src[start:end])
-			target.Options = options
+			target.Options = currentOptions
 			targets = append(targets, target)
 
 		}
 		return true
 	})
-	if len(targets) == 0 {
-		return nil, fmt.Errorf("no targets found")
-	}
+
 	return targets, nil
 }
 
