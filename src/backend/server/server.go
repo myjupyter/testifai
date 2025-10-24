@@ -1,11 +1,10 @@
 package server
 
 import (
-	"testifai/api"
-	"testifai/src/backend/config"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/myjupyter/testifai/api"
+	"github.com/myjupyter/testifai/src/backend/config"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )

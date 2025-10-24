@@ -2,8 +2,13 @@ package main
 
 import (
 	"log"
-	"testifai/src/backend/config"
-	"testifai/src/backend/server"
+
+	"github.com/myjupyter/testifai/src/backend/app/ai/gemini"
+	"github.com/myjupyter/testifai/src/backend/app/ai/openai_compatible"
+	"github.com/myjupyter/testifai/src/backend/config"
+	"github.com/myjupyter/testifai/src/backend/server"
+	"github.com/myjupyter/testifai/src/backend/service/prompt_builder"
+	"github.com/myjupyter/testifai/src/backend/service/router"
 )
 
 // @title          Testifai backend
@@ -16,9 +21,23 @@ import (
 func main() {
 	cfg := &config.Config{
 		Host:       "127.0.0.1",
-		ListenAddr: ":6667",
+		ListenAddr: ":8080",
 	}
-	handler := server.NewHandler()
+
+	promptBuilderSrv, err := prompt_builder.New()
+	if err != nil {
+		log.Fatal(err)
+	}
+	routerSrv, err := router.New(
+		promptBuilderSrv,
+		gemini.New(),
+		openai_compatible.New("OpenAI", "https://api.openai.com/v1/chat/completions", "gpt-4o"),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	handler := server.NewHandler(routerSrv)
 	srv := server.NewServer(cfg, handler)
 	if err := srv.Run(); err != nil {
 		log.Fatal(err)
