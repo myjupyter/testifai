@@ -1,0 +1,5 @@
+project: 'github.com/myjupyter/testifai'
+
+provider:
+	openai:
+		apiKey: '<YOUR_OPENAI_API_KEY>'
