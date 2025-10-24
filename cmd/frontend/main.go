@@ -8,6 +8,7 @@ import (
 	"github.com/myjupyter/testifai/pkg/path"
 	"github.com/myjupyter/testifai/pkg/vcs"
 	"github.com/myjupyter/testifai/src/frontend"
+	"github.com/myjupyter/testifai/src/frontend/client"
 	"github.com/myjupyter/testifai/src/frontend/parser"
 	"github.com/spf13/cobra"
 )
@@ -20,9 +21,25 @@ var fileName string
 var rootCmd = &cobra.Command{
 	Use: "testifai",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		_, err := parser.ParseFile(fileName, funcName, testType, outputPath)
+		targets, err := parser.ParseFile(fileName, funcName, testType, outputPath)
 		if err != nil {
 			return err
+		}
+
+		for _, target := range targets {
+			result, err := client.SendRequest(client.RequestData{
+				Host:     "localhost:6667",
+				UserCode: target.Code,
+				Provider: "openai",
+				TestType: target.Options.TestType,
+				Platform: "go",
+			})
+
+			fmt.Println()
+			fmt.Println()
+			fmt.Println(result.GeneratedTest, err)
+			fmt.Println()
+			fmt.Println()
 		}
 
 		return nil
