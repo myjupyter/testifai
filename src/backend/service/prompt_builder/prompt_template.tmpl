@@ -11,5 +11,8 @@ Here is the code in `{{ .TestType}}` for which tests need to be generated:
 ```
 
 ### Output
+- Do not insert user code in result test code
+- Do not generate mock functions
+- Do not add ``` and language in the result code
 - Generate `{{ .TestType}}` tests in `{{ .Language}}`. The output must be valid, compilable code. Do not include any text other than the test code itself.
 - Output valid {{ .Language}} code only: begin with a checklist ({{ .Language}} comment style), then provide all imports, type stubs, and required tests.
