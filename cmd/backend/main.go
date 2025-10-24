@@ -21,7 +21,7 @@ import (
 func main() {
 	cfg := &config.Config{
 		Host:       "127.0.0.1",
-		ListenAddr: ":8080",
+		ListenAddr: ":6667",
 	}
 
 	promptBuilderSrv, err := prompt_builder.New()
