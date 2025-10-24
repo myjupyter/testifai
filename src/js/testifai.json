@@ -1,0 +1,18 @@
+{
+    "provider": {
+        "openai": {
+            "apiKey": "<YOUR_OPENAI_API_KEY>"
+        }
+    },
+    "api": {
+        "endpoint": "http://localhost:6667"
+    },
+    "output": {
+        "testDir": null,
+        "extension": ".spec"
+    },
+    "scan": {
+        "include": ["**/*.ts", "**/*.js"],
+        "exclude": ["node_modules/**", "**/*.spec.*", "**/*.test.*"]
+    }
+}
