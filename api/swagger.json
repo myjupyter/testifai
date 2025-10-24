@@ -1,0 +1,99 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Testifai backend",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "url": "http://www.swagger.io/support",
+            "email": "iauglov@gmail.com"
+        },
+        "version": "1.0"
+    },
+    "basePath": "/",
+    "paths": {
+        "/generate": {
+            "post": {
+                "description": "Метод генерирует и возвращает тесты",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Generator"
+                ],
+                "summary": "Generate tests",
+                "parameters": [
+                    {
+                        "description": "Реквест",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/server.Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/server.Response"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "server.GenerateContext": {
+            "type": "object",
+            "properties": {
+                "user_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "server.Generated": {
+            "type": "object",
+            "properties": {
+                "test_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "server.Request": {
+            "type": "object",
+            "required": [
+                "provider"
+            ],
+            "properties": {
+                "api_key": {
+                    "type": "string"
+                },
+                "context": {
+                    "$ref": "#/definitions/server.GenerateContext"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                }
+            }
+        },
+        "server.Response": {
+            "type": "object",
+            "properties": {
+                "generated": {
+                    "$ref": "#/definitions/server.Generated"
+                },
+                "id": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
