@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/myjupyter/testifai/src/backend/app/model"
 	"github.com/myjupyter/testifai/src/backend/service/prompt_builder"
@@ -31,7 +32,7 @@ func New(promptBuilderSrv *prompt_builder.Service, providers ...Provider) (*Serv
 
 func (s *Service) Generate(ctx context.Context, request model.GenerateRequest) (model.AiGenerateResult, error) {
 	for _, provider := range s.providers {
-		if provider.ProviderName() == request.Provider {
+		if strings.EqualFold(provider.ProviderName(), request.Provider) {
 			prompt, err := s.promptBuilderSrv.BuildPrompt(request)
 			if err != nil {
 				return model.AiGenerateResult{}, fmt.Errorf("router: build prompt err: %w", err)
