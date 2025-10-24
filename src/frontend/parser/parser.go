@@ -1,9 +1,14 @@
 package parser
 
 import (
+	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 var testFileNamePattern = regexp.MustCompile(`_test\.go$`)
@@ -30,4 +35,110 @@ func WalkGoFiles(root string, callback func(path string) error) error {
 	}
 
 	return nil
+}
+
+func ParseFile(
+	path,
+	funcName,
+	testType,
+	output string,
+) ([]Target, error) {
+	fset := token.NewFileSet()
+
+	isSpecificFunction := funcName != ""
+
+	f, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
+	if err != nil {
+		return nil, err
+	}
+	src, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var targets []Target
+	ast.Inspect(f, func(n ast.Node) bool {
+		switch x := n.(type) {
+		case *ast.FuncDecl:
+			if isSpecificFunction && x.Name.Name != funcName {
+				return true
+			}
+
+			options, isOverriden := OverrideTestify(x.Doc)
+			if !isOverriden {
+				options = TestifyOptions{
+					TestFunc:   x.Name.Name,
+					TestType:   testType,
+					OutputFile: output,
+				}
+			}
+
+			var target Target
+
+			tf := fset.File(x.Pos())
+			start := tf.Offset(x.Pos())
+			end := tf.Offset(x.End())
+
+			target.Code = string(src[start:end])
+			target.Options = options
+			targets = append(targets, target)
+
+		}
+		return true
+	})
+	if len(targets) == 0 {
+		return nil, fmt.Errorf("no targets found")
+	}
+	return targets, nil
+}
+
+func OverrideTestify(doc *ast.CommentGroup) (options TestifyOptions, overriden bool) {
+	config := TestifyOptions{}
+	if doc == nil {
+		return config, false
+	}
+
+	const generatePrefix = "//go:generate"
+
+	var commandAndArgs string
+	for _, commentLine := range doc.List {
+		line := commentLine.Text
+		if !strings.HasPrefix(line, generatePrefix) {
+			continue
+		}
+		commandAndArgs = strings.TrimPrefix(line, generatePrefix)
+		break
+	}
+	if commandAndArgs == "" {
+		return config, false
+	}
+
+	parts := strings.Fields(commandAndArgs)
+
+	if len(parts) == 0 {
+		return config, false
+	}
+
+	for i := 1; i < len(parts); i++ {
+		part := parts[i]
+
+		flagParts := strings.SplitN(part, "=", 2)
+
+		flagName := flagParts[0]
+		var flagValue string
+		if len(flagParts) > 1 {
+			flagValue = flagParts[1]
+		}
+
+		switch flagName {
+		case "--type", "-t":
+			config.TestType = flagValue
+		case "--output", "-o":
+			config.OutputFile = flagValue
+		case "--func", "-f":
+			config.TestFunc = flagValue
+		}
+	}
+
+	return config, config != TestifyOptions{}
 }

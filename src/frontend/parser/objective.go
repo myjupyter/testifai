@@ -1,14 +1,12 @@
 package parser
 
-const (
-	XUnitTestType = "xunit"
-	TableTestType = "table"
-	SuiteTestType = "suite"
-)
+type Target struct {
+	Code    string
+	Options TestifyOptions
+}
 
-type TestType string
-
-type Objective struct {
-	TestType TestType
-	Code     string
+type TestifyOptions struct {
+	TestFunc   string
+	TestType   string
+	OutputFile string
 }
