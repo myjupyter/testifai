@@ -1,8 +1,6 @@
-// @ts-check
-
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdtempSync, rmSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { generateTestFiles, generateMultipleTestFiles, getTestFileStats, validateTestFile } from '../generator.mjs';
 
@@ -12,7 +10,6 @@ import { generateTestFiles, generateMultipleTestFiles, getTestFileStats, validat
 
 const baseConfig = /** @type {TestifaiConfig} */ ({
     provider: { openai: { apiKey: 'valid-api-key-12345' } },
-    api: { endpoint: 'http://localhost:6667' },
 });
 
 const scanResult = /** @type {ScanResult} */ ({
@@ -20,9 +17,9 @@ const scanResult = /** @type {ScanResult} */ ({
     functionName: 'add',
     functionCode: 'export function add(a, b) { return a + b; }',
     functionStartLine: 1,
-    testType: 'suite',
+    testType: 'table',
     language: 'ts',
-    comment: '// testifai: -type=suite',
+    comment: '// ts:generate testifai: -type=table',
     line: 1,
     additionalParams: '',
 });
@@ -44,6 +41,7 @@ describe('generator core utilities', () => {
         sourceFile = join(tempDir, 'src', 'math.ts');
 
         process.chdir(tempDir);
+        mkdirSync(dirname(sourceFile), { recursive: true });
         writeFileSync(sourceFile, 'export const noop = () => {};', { encoding: 'utf8' });
     });
 
@@ -84,6 +82,7 @@ describe('generator core utilities', () => {
         const resultA = { ...scanResult, file: sourceFile };
         const otherFile = join(tempDir, 'src', 'other.ts');
 
+        mkdirSync(dirname(otherFile), { recursive: true });
         writeFileSync(otherFile, 'export const mul = () => {};', 'utf8');
 
         const resultB = { ...scanResult, file: otherFile, functionName: 'mul' };

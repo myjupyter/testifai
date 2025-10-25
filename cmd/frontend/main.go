@@ -3,13 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
-	"github.com/myjupyter/testifai/pkg/path"
 	"github.com/myjupyter/testifai/pkg/vcs"
-	"github.com/myjupyter/testifai/src/frontend"
-	"github.com/myjupyter/testifai/src/frontend/client"
-	parserv2 "github.com/myjupyter/testifai/src/frontend/parser/v2"
+	"github.com/myjupyter/testifai/src/frontend/parser"
 	"github.com/spf13/cobra"
 )
 
@@ -21,92 +19,14 @@ var fileName string
 var rootCmd = &cobra.Command{
 	Use: "testifai",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		rootPath, err := path.GetRepoRoot()
+		_, err := parser.ParseFile(fileName, funcName, testType, outputPath)
 		if err != nil {
 			return err
 		}
 
-		repoContext, err := parserv2.NewRepositoryContext(rootPath)
-		if err != nil {
-			return err
-		}
-
-		if err := repoContext.Parse(); err != nil {
-			return err
-		}
-
-		collection, err := parserv2.Collect(repoContext, fileName, funcName)
-		if err != nil {
-			return err
-		}
-
-		for _, collect := range collection {
-			//fmt.Println()
-			//fmt.Println("пакет")
-			//fmt.Println(collect.PackageName)
-			//fmt.Println(collect.FunctionName)
-			//fmt.Println()
-			//fmt.Println("тело")
-			//fmt.Println(collect.BodyWithReceiver)
-			//fmt.Println()
-			//fmt.Println("внешние зависимости")
-			//fmt.Println(collect.ExternalImports)
-			//fmt.Println()
-			//fmt.Println("внутренние зависимости")
-			//fmt.Println(collect.InternalDependencies)
-			//result, err := frontend.SendRequest(frontend.RequestData{
-			//	Host:     "localhost:6667",
-			//	UserCode: collect.Code,
-			//	Provider: "openai",
-			//	TestType: collect.Options.TestType,
-			//	Platform: "go",
-			//})
-
-			response, err := client.SendRequest(client.RequestData{
-				Host:            "localhost:6667",
-				UserCode:        collect.BodyWithReceiver,
-				UserCodeContext: collect.InternalDependencies,
-				ExternalImports: collect.ExternalImports,
-				PackageName:     collect.PackageName,
-				TestType:        testType,
-				Platform:        "go",
-			})
-
-			if err != nil {
-				return err
-			}
-
-			err = os.WriteFile(outputPath, []byte(response.GeneratedTest), 0644)
-			if err != nil {
-				return err
-			}
-
-		}
+		// TODO
 
 		return nil
-
-		// targets, err := parser.ParseFile(fileName, funcName, testType, outputPath)
-		// if err != nil {
-		// 	return err
-		// }
-
-		// for _, target := range targets {
-		// 	result, err := client.SendRequest(client.RequestData{
-		// 		Host:     "localhost:6667",
-		// 		UserCode: target.Code,
-		// 		Provider: "openai",
-		// 		TestType: target.Options.TestType,
-		// 		Platform: "go",
-		// 	})
-
-		// 	fmt.Println()
-		// 	fmt.Println()
-		// 	fmt.Println(result.GeneratedTest, err)
-		// 	fmt.Println()
-		// 	fmt.Println()
-		// }
-
-		// return nil
 	},
 }
 
@@ -133,14 +53,14 @@ provider:
 }
 
 func main() {
-	rootCmd.Flags().StringVarP(&testType, "type", "t", frontend.XUnitTestType.String(), "Type of test (xunit|table|suite)")
+	rootCmd.Flags().StringVarP(&testType, "type", "t", "xunit", "Type of test (xunit|table|suite)")
+	rootCmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output path")
 	rootCmd.Flags().StringVarP(&funcName, "func", "f", "", "Specific unction/method name to test")
 
-	rootCmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output path")
-	outputPath = path.GetOutFilepath(outputPath)
+	fname := os.Getenv("GOFILE")
+	dirPath, _ := os.Getwd()
 
-	rootCmd.Flags().StringVarP(&fileName, "file", "p", "", "Specific file to test")
-	fileName = path.GetInFilepath(fileName)
+	rootCmd.Flags().StringVarP(&fileName, "file", "p", filepath.Join(dirPath, fname), "Specific file to test")
 
 	rootCmd.AddCommand(initCmd)
 	if err := rootCmd.Execute(); err != nil {

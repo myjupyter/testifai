@@ -1,5 +1,5 @@
-import { writeFileSync, existsSync, mkdirSync, readFileSync, statSync } from 'fs';
-import { join, dirname, basename, extname } from 'path';
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'fs';
+import { basename, dirname, extname, join, relative } from 'path';
 import { getEffectiveConfig } from './config.mjs';
 
 /**
@@ -31,13 +31,12 @@ function getTestFilePath(sourceFile, config = getEffectiveConfig()) {
     if (testDir) {
         // Put tests in a specific directory
         const relativePath = sourceFile.replace(process.cwd(), '').replace(/^\//, '');
-        const testPath = join(testDir, dirname(relativePath), testFileName);
 
-        return testPath;
+        return join(testDir, dirname(relativePath), testFileName);
     }
 
-    // Put test next to source file
-    return join(sourceDir, testFileName);
+    // Default: put test in __tests__ subdirectory next to source file
+    return join(sourceDir, '__tests__', testFileName);
 }
 
 /**
@@ -56,10 +55,10 @@ function ensureDirectoryExists(filePath) {
  * Format generated test code
  * @param {string} testCode - Raw test code from API
  * @param {ScanResult} scanResult - Original scan result
- * @param {TestifaiConfig} config - Configuration
+ * @param {string} testFilePath - Target test file path
  * @returns {string} Formatted test code
  */
-function formatTestCode(testCode, scanResult, config) {
+function formatTestCode(testCode, scanResult, testFilePath) {
     const { functionName, file } = scanResult;
 
     // Add header comment
@@ -74,7 +73,15 @@ function formatTestCode(testCode, scanResult, config) {
     // Ensure proper imports for TypeScript
     if (scanResult.language === 'ts' && !formattedCode.includes('import')) {
         // Add basic imports if not present
-        const importPath = `./${basename(file, extname(file))}`;
+        const testDir = dirname(testFilePath);
+        const sourceWithoutExt = file.slice(0, -extname(file).length);
+        let importPath = relative(testDir, sourceWithoutExt);
+
+        if (!importPath.startsWith('.')) {
+            importPath = `./${importPath}`;
+        }
+
+        importPath = importPath.replace(/\\/g, '/');
         const importLine = `import { ${functionName} } from '${importPath}';\n\n`;
 
         formattedCode = importLine + formattedCode;
@@ -146,7 +153,7 @@ export async function generateTestFiles(scanResult, apiResponse, options = {}) {
         ensureDirectoryExists(testFilePath);
 
         // Format the test code
-        const formattedCode = formatTestCode(apiResponse.generated.test_code, scanResult, effectiveConfig);
+        const formattedCode = formatTestCode(apiResponse.generated.test_code, scanResult, testFilePath);
 
         // Write the test file
         writeFileSync(testFilePath, formattedCode, 'utf8');

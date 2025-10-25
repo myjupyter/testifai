@@ -10,29 +10,78 @@ import { join, extname, relative } from 'path';
  */
 
 /**
- * Regular expression to match testifai comments
- * Matches: // testifai: -type=xunit|table|suite
+ * Regular expression to match generator directives
+ * Matches: // js:generate testifai: -type=xunit ...
+ *          // ts:generate testifai: -type=table ...
  */
-const TESTIFAI_COMMENT_REGEX = /\/\/\s*testifai:\s*-type=(xunit|table|suite)(?:\s+(.+))?/;
+const GENERATE_COMMENT_REGEX = /^\s*\/\/\s*(js|ts):generate\s+testifai:\s*-type=([a-zA-Z]+)(.*)$/i;
 
 /**
- * Regular expressions for different function types
+ * Regular expressions for different function and class types
  */
 const FUNCTION_PATTERNS = [
+    // Classes: class Name, export class Name, abstract class Name
+    {
+        pattern: /(?:export\s+)?(?:abstract\s+)?class\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/,
+        type: 'class',
+    },
+
+    // Short arrow functions: const fn = (a, b) => a + b;
+    {
+        pattern:
+            /(?:export\s+)?(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(?:async\s+)?(?:\([^)]*\)|[a-zA-Z_$][a-zA-Z0-9_$]*)\s*=>\s*([^{;]+)[;}]/,
+        type: 'short-arrow',
+    },
+
+    // Arrow functions with body: const fn = (a, b) => { return a + b; }
+    {
+        pattern:
+            /(?:export\s+)?(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(?:async\s+)?(?:\([^)]*\)|[a-zA-Z_$][a-zA-Z0-9_$]*)\s*=>\s*\{/,
+        type: 'arrow',
+    },
+
     // Regular function declaration: function name() {} (with optional TypeScript types)
-    /function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\([^)]*\)\s*:\s*[^{]*\{/,
-    /function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\([^)]*\)\s*\{/,
-    // Arrow function: const name = () => {}
-    /(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(?:\([^)]*\)|[a-zA-Z_$][a-zA-Z0-9_$]*)\s*=>\s*\{/,
-    // Method in class: methodName() {}
-    /(?:async\s+)?([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\([^)]*\)\s*:\s*[^{]*\{/,
-    /(?:async\s+)?([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\([^)]*\)\s*\{/,
-    // Export function: export function name() {}
-    /export\s+(?:default\s+)?function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\([^)]*\)\s*:\s*[^{]*\{/,
-    /export\s+(?:default\s+)?function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\([^)]*\)\s*\{/,
-    // Export arrow function: export const name = () => {}
-    /export\s+(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(?:\([^)]*\)|[a-zA-Z_$][a-zA-Z0-9_$]*)\s*=>\s*\{/,
+    {
+        pattern: /(?:export\s+)?(?:async\s+)?function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\([^)]*\)\s*:\s*[^{]*\{/,
+        type: 'function',
+    },
+    {
+        pattern: /(?:export\s+)?(?:async\s+)?function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\([^)]*\)\s*\{/,
+        type: 'function',
+    },
+
+    // Class methods: methodName() {}, static methodName() {}, async methodName() {}
+    {
+        pattern: /(?:static\s+)?(?:async\s+)?(?:get\s+|set\s+)?([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\([^)]*\)\s*:\s*[^{]*\{/,
+        type: 'method',
+    },
+    {
+        pattern: /(?:static\s+)?(?:async\s+)?(?:get\s+|set\s+)?([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\([^)]*\)\s*\{/,
+        type: 'method',
+    },
+
+    // Constructor
+    {
+        pattern: /constructor\s*\([^)]*\)\s*\{/,
+        type: 'constructor',
+        name: 'constructor',
+    },
 ];
+
+/**
+ * Check whether directive and type are allowed for a given language
+ * @param {import('../types.mjs').Language} language
+ * @param {string} directive
+ * @param {string} testType
+ * @returns {boolean}
+ */
+function isSupportedDirective(language, directive, testType) {
+    if (language === 'ts') {
+        return directive === 'ts' && testType === 'table';
+    }
+
+    return directive === 'js' && testType === 'xunit';
+}
 
 /**
  * Check if a path should be included in scanning
@@ -42,11 +91,13 @@ const FUNCTION_PATTERNS = [
  */
 function shouldIncludeFile(
     filePath,
-    scanConfig = { include: ['**/*.ts', '**/*.js'], exclude: ['node_modules/**', '**/*.spec.*', '**/*.test.*'] },
+    scanConfig = {
+        include: ['**/*.ts', '**/*.js'],
+        exclude: ['node_modules/**', '**/*.spec.*', '**/*.test.*'],
+    },
 ) {
     const effectiveScanConfig = /** @type {ScanConfig} */ (scanConfig);
-    const { include = ['**/*.ts', '**/*.js'], exclude = ['node_modules/**', '**/*.spec.*', '**/*.test.*'] } =
-        effectiveScanConfig;
+    const { exclude = ['node_modules/**', '**/*.spec.*', '**/*.test.*'] } = effectiveScanConfig;
 
     // Check file extension
     const ext = extname(filePath);
@@ -76,7 +127,10 @@ function shouldIncludeFile(
  */
 function getFiles(
     dirPath,
-    scanConfig = { include: ['**/*.ts', '**/*.js'], exclude: ['node_modules/**', '**/*.spec.*', '**/*.test.*'] },
+    scanConfig = {
+        include: ['**/*.ts', '**/*.js'],
+        exclude: ['node_modules/**', '**/*.spec.*', '**/*.test.*'],
+    },
 ) {
     const effectiveScanConfig = /** @type {ScanConfig} */ (scanConfig);
     const files = /** @type {string[]} */ ([]);
@@ -119,7 +173,7 @@ function getFiles(
 }
 
 /**
- * Extract function code starting from a given line
+ * Extract function or class code starting from a given line
  * @param {string[]} lines - Array of file lines
  * @param {number} startLine - Starting line number (0-based)
  * @returns {FunctionInfo|null} Function info or null if not found
@@ -129,19 +183,17 @@ function extractFunctionCode(lines, startLine) {
         const line = lines[i];
 
         // Try each function pattern
-        for (const pattern of FUNCTION_PATTERNS) {
+        for (const { pattern, name, type } of FUNCTION_PATTERNS) {
             const match = line.match(pattern);
 
             if (match) {
-                const functionName = match[1];
-
-                // Find the opening brace and extract the complete function
-                const functionCode = extractCompleteFunction(lines, i);
+                const functionName = name || match[1] || 'anonymous';
+                const functionCode = extractCodeByType(lines, i, type, match);
 
                 return {
                     functionName,
                     functionCode,
-                    startLine: i + 1, // Convert to 1-based
+                    startLine: i + 1,
                     line: line.trim(),
                 };
             }
@@ -152,12 +204,78 @@ function extractFunctionCode(lines, startLine) {
 }
 
 /**
- * Extract complete function code by matching braces
+ * Extract code based on function/class type
  * @param {string[]} lines - Array of file lines
  * @param {number} startLine - Starting line number (0-based)
- * @returns {string} Complete function code
+ * @param {string} type - Type of function/class
+ * @param {RegExpMatchArray} match - Regex match result
+ * @returns {string} Complete code
  */
-function extractCompleteFunction(lines, startLine) {
+function extractCodeByType(lines, startLine, type, match) {
+    switch (type) {
+        case 'short-arrow':
+            return extractShortArrowFunction(lines, startLine, match);
+        case 'class':
+            return extractClassCode(lines, startLine);
+        case 'arrow':
+        case 'function':
+        case 'method':
+        case 'constructor':
+        default:
+            return extractBracedCode(lines, startLine);
+    }
+}
+
+/**
+ * Extract short arrow function code
+ * @param {string[]} lines - Array of file lines
+ * @param {number} startLine - Starting line number (0-based)
+ * @param {RegExpMatchArray} _match - Regex match result (unused)
+ * @returns {string} Complete arrow function code
+ */
+function extractShortArrowFunction(lines, startLine, _match) {
+    const line = lines[startLine];
+
+    // For short arrow functions, the entire function is usually on one line
+    // But we might need to handle multi-line cases
+    let code = line;
+
+    // Check if the line ends with semicolon or is complete
+    if (line.trim().endsWith(';') || line.trim().endsWith(',')) {
+        return code.trim();
+    }
+
+    // If not complete, look for continuation
+    for (let i = startLine + 1; i < lines.length; i++) {
+        const nextLine = lines[i];
+
+        code += '\n' + nextLine;
+
+        if (nextLine.trim().endsWith(';') || nextLine.trim().endsWith(',')) {
+            break;
+        }
+    }
+
+    return code.trim();
+}
+
+/**
+ * Extract class code including all methods
+ * @param {string[]} lines - Array of file lines
+ * @param {number} startLine - Starting line number (0-based)
+ * @returns {string} Complete class code
+ */
+function extractClassCode(lines, startLine) {
+    return extractBracedCode(lines, startLine);
+}
+
+/**
+ * Extract complete code by matching braces (for functions, classes, methods)
+ * @param {string[]} lines - Array of file lines
+ * @param {number} startLine - Starting line number (0-based)
+ * @returns {string} Complete code
+ */
+function extractBracedCode(lines, startLine) {
     const functionLines = [];
     let braceCount = 0;
     let started = false;
@@ -195,6 +313,7 @@ function extractCompleteFunction(lines, startLine) {
 function parseFile(filePath, options = { verbose: false }) {
     /** @type {ScanOptions} */
     const parseOptions = options;
+    const fileLanguage = filePath.endsWith('.ts') || filePath.endsWith('.tsx') ? 'ts' : 'js';
 
     try {
         const content = readFileSync(filePath, 'utf8');
@@ -204,47 +323,64 @@ function parseFile(filePath, options = { verbose: false }) {
         // Find all testifai comments
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
-            const commentMatch = line.match(TESTIFAI_COMMENT_REGEX);
+            const commentMatch = line.match(GENERATE_COMMENT_REGEX);
 
-            if (commentMatch) {
-                const testType = commentMatch[1];
-                const additionalParams = commentMatch[2] || '';
+            if (!commentMatch) {
+                continue;
+            }
 
+            const directive = commentMatch[1].toLowerCase();
+            const testType = commentMatch[2].toLowerCase();
+            const additionalParamsRaw = commentMatch[3] || '';
+
+            if (!isSupportedDirective(fileLanguage, directive, testType)) {
+                continue;
+            }
+
+            const additionalParams = additionalParamsRaw.trim();
+
+            if (parseOptions.verbose) {
+                console.log(
+                    `Found testifai comment: language=${fileLanguage}, directive=${directive}, type=${testType}, params=${additionalParams}`,
+                );
+            }
+
+            // Filter by type if specified
+            if (parseOptions.type && testType !== parseOptions.type) {
+                continue;
+            }
+
+            // Look for the next function after the comment
+            const functionInfo = extractFunctionCode(lines, i + 1);
+
+            if (functionInfo) {
                 if (parseOptions.verbose) {
-                    console.log(`Found testifai comment: type=${testType}, params=${additionalParams}`);
+                    console.log(`Found function: ${functionInfo.functionName}`);
                 }
 
-                // Filter by type if specified
-                if (parseOptions.type && testType !== parseOptions.type) {
-                    continue;
+                results.push({
+                    file: filePath,
+                    line: i + 1, // Convert to 1-based line number
+                    comment: line.trim(),
+                    testType: /** @type {import('../types.mjs').TestType} */ (testType),
+                    additionalParams,
+                    functionName: functionInfo.functionName,
+                    functionCode: functionInfo.functionCode,
+                    functionStartLine: functionInfo.startLine,
+                    language: /** @type {import('../types.mjs').Language} */ (fileLanguage),
+                });
+
+                // If this is a class, also parse inside it for method comments
+                if (
+                    functionInfo.functionCode.trim().startsWith('class ') ||
+                    functionInfo.functionCode.trim().startsWith('export class ')
+                ) {
+                    const classMethodResults = parseInsideClass(lines, i + 1, filePath, fileLanguage, parseOptions);
+
+                    results.push(...classMethodResults);
                 }
-
-                // Look for the next function after the comment
-                const functionInfo = extractFunctionCode(lines, i + 1);
-
-                if (functionInfo) {
-                    if (parseOptions.verbose) {
-                        console.log(`Found function: ${functionInfo.functionName}`);
-                    }
-
-                    results.push({
-                        file: filePath,
-                        line: i + 1, // Convert to 1-based line number
-                        comment: line.trim(),
-                        testType: /** @type {import('../types.mjs').TestType} */ (testType),
-                        additionalParams,
-                        functionName: functionInfo.functionName,
-                        functionCode: functionInfo.functionCode,
-                        functionStartLine: functionInfo.startLine,
-                        language: /** @type {import('../types.mjs').Language} */ (
-                            filePath.endsWith('.ts') || filePath.endsWith('.tsx') ? 'ts' : 'js'
-                        ),
-                    });
-                } else {
-                    if (parseOptions.verbose) {
-                        console.warn(`Warning: testifai comment found but no function follows at ${filePath}:${i + 1}`);
-                    }
-                }
+            } else if (parseOptions.verbose) {
+                console.warn(`Warning: testifai comment found but no function follows at ${filePath}:${i + 1}`);
             }
         }
 
@@ -258,6 +394,173 @@ function parseFile(filePath, options = { verbose: false }) {
 
         return [];
     }
+}
+
+/**
+ * Parse comments inside class body for methods
+ * @param {string[]} lines - Array of file lines
+ * @param {number} classStartLine - Line where class starts (0-based)
+ * @param {string} filePath - File path
+ * @param {import('../types.mjs').Language} fileLanguage - File language
+ * @param {ScanOptions} parseOptions - Parse options
+ * @returns {ScanResult[]} Array of scan results for class methods
+ */
+function parseInsideClass(lines, classStartLine, filePath, fileLanguage, parseOptions) {
+    /** @type {ScanResult[]} */
+    const results = [];
+
+    // Find class boundaries
+    let braceCount = 0;
+    let started = false;
+    let classEndLine = lines.length;
+
+    for (let i = classStartLine; i < lines.length; i++) {
+        const line = lines[i];
+
+        for (const char of line) {
+            if (char === '{') {
+                braceCount++;
+                started = true;
+            } else if (char === '}') {
+                braceCount--;
+            }
+        }
+
+        if (started && braceCount === 0) {
+            classEndLine = i;
+            break;
+        }
+    }
+
+    // Look for comments inside class body
+    for (let i = classStartLine + 1; i < classEndLine; i++) {
+        const line = lines[i];
+        const commentMatch = line.match(GENERATE_COMMENT_REGEX);
+
+        if (!commentMatch) {
+            continue;
+        }
+
+        const directive = commentMatch[1].toLowerCase();
+        const testType = commentMatch[2].toLowerCase();
+        const additionalParamsRaw = commentMatch[3] || '';
+
+        if (!isSupportedDirective(fileLanguage, directive, testType)) {
+            continue;
+        }
+
+        const additionalParams = additionalParamsRaw.trim();
+
+        if (parseOptions.verbose) {
+            console.log(
+                `Found testifai comment inside class: language=${fileLanguage}, directive=${directive}, type=${testType}, params=${additionalParams}`,
+            );
+        }
+
+        // Filter by type if specified
+        if (parseOptions.type && testType !== parseOptions.type) {
+            continue;
+        }
+
+        // Look for the next method after the comment (within class boundaries)
+        const methodInfo = extractMethodFromClass(lines, i + 1, classEndLine);
+
+        if (methodInfo) {
+            if (parseOptions.verbose) {
+                console.log(`Found method: ${methodInfo.functionName}`);
+            }
+
+            results.push({
+                file: filePath,
+                line: i + 1, // Convert to 1-based line number
+                comment: line.trim(),
+                testType: /** @type {import('../types.mjs').TestType} */ (testType),
+                additionalParams,
+                functionName: methodInfo.functionName,
+                functionCode: methodInfo.functionCode,
+                functionStartLine: methodInfo.startLine,
+                language: /** @type {import('../types.mjs').Language} */ (fileLanguage),
+            });
+        } else if (parseOptions.verbose) {
+            console.warn(`Warning: testifai comment found but no method follows at ${filePath}:${i + 1}`);
+        }
+    }
+
+    return results;
+}
+
+/**
+ * Extract method code from class (limited to class boundaries)
+ * @param {string[]} lines - Array of file lines
+ * @param {number} startLine - Starting line number (0-based)
+ * @param {number} classEndLine - End line of class (0-based)
+ * @returns {FunctionInfo|null} Method info or null if not found
+ */
+function extractMethodFromClass(lines, startLine, classEndLine) {
+    for (let i = startLine; i < Math.min(classEndLine, lines.length); i++) {
+        const line = lines[i];
+
+        // Try method patterns (skip class pattern since we're inside a class)
+        for (const patternObj of FUNCTION_PATTERNS) {
+            if (patternObj.type === 'class') {
+                continue; // Skip class patterns when looking for methods
+            }
+
+            const match = line.match(patternObj.pattern);
+
+            if (match) {
+                const functionName = patternObj.name || match[1] || 'anonymous';
+
+                // Extract method code (limited to class boundaries)
+                const functionCode = extractMethodCode(lines, i, classEndLine);
+
+                return {
+                    functionName,
+                    functionCode,
+                    startLine: i + 1, // Convert to 1-based
+                    line: line.trim(),
+                };
+            }
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Extract method code within class boundaries
+ * @param {string[]} lines - Array of file lines
+ * @param {number} startLine - Starting line number (0-based)
+ * @param {number} classEndLine - End line of class (0-based)
+ * @returns {string} Complete method code
+ */
+function extractMethodCode(lines, startLine, classEndLine) {
+    const methodLines = [];
+    let braceCount = 0;
+    let started = false;
+
+    for (let i = startLine; i < Math.min(classEndLine, lines.length); i++) {
+        const line = lines[i];
+
+        methodLines.push(line);
+
+        // Count braces to find method boundaries
+        for (const char of line) {
+            if (char === '{') {
+                braceCount++;
+                started = true;
+            } else if (char === '}') {
+                braceCount--;
+            }
+        }
+
+        // Method ends when braces are balanced
+        if (started && braceCount === 0) {
+            break;
+        }
+    }
+
+    return methodLines.join('\n');
 }
 
 /**
@@ -313,11 +616,12 @@ export function parseCommentParams(paramString) {
     }
 
     // Simple parameter parsing: -key=value -flag
-    const paramMatches = paramString.matchAll(/-([a-zA-Z]+)(?:=([^\\s]+))?/g);
+    const paramMatches = paramString.matchAll(/-([a-zA-Z]+)(?:=([^\s]+))?/g);
 
     for (const match of paramMatches) {
         const key = match[1].toLowerCase();
-        const rawValue = match[2] || true;
+        const valueSegment = match[2];
+        const rawValue = typeof valueSegment === 'string' ? valueSegment.trim() : true;
 
         switch (key) {
             case 'type':

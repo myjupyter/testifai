@@ -1,5 +1,3 @@
-// @ts-check
-
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -10,8 +8,11 @@ import { initConfig, loadConfig, validateConfig, getEffectiveConfig } from '../c
 /** @typedef {{ cwd: string, dir: string }} CleanupContext */
 
 const validConfig = /** @type {TestifaiConfig} */ ({
-    provider: { openai: { apiKey: 'test-api-key-12345' } },
-    api: { endpoint: 'http://localhost:6667' },
+    provider: {
+        openai: {
+            apiKey: 'test-api-key-12345',
+        },
+    },
 });
 
 describe('config core utilities', () => {
@@ -63,11 +64,14 @@ describe('config core utilities', () => {
 
     it('validateConfig rejects missing or placeholder values', () => {
         expect(() => validateConfig(/** @type {any} */ (undefined))).toThrow(/Configuration is required/);
-        expect(() => validateConfig(/** @type {any} */ ({}))).toThrow(/OpenAI API key is required/);
+        expect(() => validateConfig(/** @type {TestifaiConfig} */ ({}))).toThrow(/OpenAI API key is required/);
 
-        const placeholderConfig = /** @type {any} */ ({
-            provider: { openai: { apiKey: '<YOUR_OPENAI_API_KEY>' } },
-            api: { endpoint: 'http://localhost' },
+        const placeholderConfig = /** @type {TestifaiConfig} */ ({
+            provider: {
+                openai: {
+                    apiKey: '<YOUR_OPENAI_API_KEY>',
+                },
+            },
         });
 
         expect(() => validateConfig(placeholderConfig)).toThrow(/Please set a valid OpenAI API key/);
@@ -76,7 +80,10 @@ describe('config core utilities', () => {
     it('getEffectiveConfig merges defaults with overrides', () => {
         const effective = getEffectiveConfig({
             ...validConfig,
-            output: { testDir: 'tests', extension: '.spec' },
+            output: {
+                testDir: 'tests',
+                extension: '.spec',
+            },
         });
 
         expect(effective.provider.openai.apiKey).toBe('test-api-key-12345');

@@ -1,16 +1,16 @@
 package model
 
 type GenerateRequest struct {
+	ApiKey   string
+	Provider string
+	Id       string
 	Context  GenerateContext
 	Testifai Testifai
 }
 
 type GenerateContext struct {
-	UserCode        string
-	UserCodeContext string
-	PackageName     string
-	ExternalImport  []string
-	Plarform        string
+	UserCode string
+	Plarform string
 }
 
 type Testifai struct {

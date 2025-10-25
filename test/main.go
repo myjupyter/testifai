@@ -5,8 +5,7 @@ import (
 	"strings"
 )
 
-//go:generate testifai --func=countWords --type=xunit --output=countWords_ai_test.go
-
+//go:generate testifai --type=xunit --output=countWords_ai_test.go
 func countWords(s string) int {
 	if s == "" {
 		return 0

@@ -7,8 +7,8 @@ swag:
 	@go install github.com/swaggo/swag/cmd/swag@latest
 	@swag init -g cmd/backend/main.go -o api
 
-.PHONY: build 
-build:
+.PHONY: testifai
+testifai:
 	go build -o bin/testifai ./cmd/frontend/main.go
 
 .PHONY: test

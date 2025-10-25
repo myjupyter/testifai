@@ -5,7 +5,6 @@
 /**
  * @typedef {Object} TestifaiConfig
  * @property {ProviderConfig} provider - Provider configuration
- * @property {APIConfig} api - API configuration
  * @property {OutputConfig} output - Output configuration
  * @property {ScanConfig} scan - Scan configuration
  */
@@ -18,11 +17,6 @@
 /**
  * @typedef {Object} OpenAIConfig
  * @property {string} apiKey - OpenAI API key
- */
-
-/**
- * @typedef {Object} APIConfig
- * @property {string} endpoint - API endpoint URL
  */
 
 /**

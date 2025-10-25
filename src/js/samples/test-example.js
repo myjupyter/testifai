@@ -1,13 +1,14 @@
 // Тестовый файл для проверки testifai CLI
 
-// testifai: -type=xunit
-function calculateSum(a: number, b: number): number {
+// js:generate testifai: -type=xunit
+function calculateSum(a, b) {
     return a + b;
 }
 
-// testifai: -type=table
-function validateEmail(email: string): boolean {
+// js:generate testifai: -type=table
+function validateEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     return emailRegex.test(email);
 }
 

@@ -59,22 +59,10 @@ const docTemplate = `{
         "server.GenerateContext": {
             "type": "object",
             "properties": {
-                "external_import": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "package_name": {
-                    "type": "string"
-                },
                 "platform": {
                     "type": "string"
                 },
                 "user_code": {
-                    "type": "string"
-                },
-                "user_code_context": {
                     "type": "string"
                 }
             }
@@ -89,11 +77,20 @@ const docTemplate = `{
         },
         "server.Request": {
             "type": "object",
+            "required": [
+                "provider"
+            ],
             "properties": {
+                "api_key": {
+                    "type": "string"
+                },
                 "context": {
                     "$ref": "#/definitions/server.GenerateContext"
                 },
                 "id": {
+                    "type": "string"
+                },
+                "provider": {
                     "type": "string"
                 },
                 "testifai": {
@@ -114,6 +111,9 @@ const docTemplate = `{
         },
         "server.Testifai": {
             "type": "object",
+            "required": [
+                "test_type"
+            ],
             "properties": {
                 "test_type": {
                     "type": "string"

@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"github.com/myjupyter/testifai/src/backend/app/ai/gemini"
 	"github.com/myjupyter/testifai/src/backend/app/ai/openai_compatible"
 	"github.com/myjupyter/testifai/src/backend/config"
 	"github.com/myjupyter/testifai/src/backend/server"
@@ -19,11 +20,8 @@ import (
 // @BasePath  /
 func main() {
 	cfg := &config.Config{
-		Host:        "127.0.0.1",
-		ListenAddr:  ":6667",
-		LLMEndpoint: "https://api.openai.com/v1/chat/completions",
-		LLMAPIKey:   "",
-		LLMProvider: "openai",
+		Host:       "127.0.0.1",
+		ListenAddr: ":6667",
 	}
 
 	promptBuilderSrv, err := prompt_builder.New()
@@ -32,12 +30,8 @@ func main() {
 	}
 	routerSrv, err := router.New(
 		promptBuilderSrv,
-		openai_compatible.New(
-			cfg.LLMProvider,
-			cfg.LLMEndpoint,
-			"gpt-4o",
-			cfg.LLMAPIKey,
-		),
+		gemini.New(),
+		openai_compatible.New("OpenAI", "https://api.openai.com/v1/chat/completions", "gpt-4o"),
 	)
 	if err != nil {
 		log.Fatal(err)

@@ -24,8 +24,10 @@ const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'));
  */
 function parseArgs(args = process.argv.slice(2)) {
     const command = args[0] || 'scan';
-    const options = /** @type {Record<string, string | boolean>} */ ({});
-    const positionalArgs = /** @type {string[]} */ ([]);
+    /** @type {Record<string, string | boolean>} */
+    const options = {};
+    /** @type {string[]} */
+    const positionalArgs = [];
 
     for (let i = 1; i < args.length; i++) {
         const arg = args[i];
@@ -47,7 +49,11 @@ function parseArgs(args = process.argv.slice(2)) {
         }
     }
 
-    return { command, options, args: positionalArgs };
+    return {
+        command,
+        options,
+        args: positionalArgs,
+    };
 }
 
 /**
@@ -133,10 +139,11 @@ export async function main() {
         }
 
         if (command === 'init') {
-            const initOptions = /** @type {import('./core/config.mjs').InitOptions} */ ({
+            /** @type {import('./core/config.mjs').InitOptions} */
+            const initOptions = {
                 config: initConfigPath,
                 force: forceFlag,
-            });
+            };
 
             await initConfig(initOptions);
 
@@ -190,7 +197,7 @@ export async function main() {
                 } catch (error) {
                     const err = error instanceof Error ? error : new Error(String(error));
 
-                    console.error(`❌ Failed to generate test for ${result.functionName}: ${err.message}`);
+                    console.error(`❌ ${err.message}`);
                 }
             });
 

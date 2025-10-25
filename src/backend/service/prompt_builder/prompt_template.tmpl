@@ -1,41 +1,15 @@
 ### Objective
-Your task is to generate only test code for the provided user code.
-The output must be pure, compilable test code, without explanations, markdown formatting, or code fences.
 
-### Input
-The following is the primary user code for which tests should be generated:
-{{ .UserCode }}
+- Your task is to generate tests for the provided code. The output must be only the test code, without any additional explanations, comments, or messages.
 
-The user code depends on the following definitions (which you must assume exist and are in scope):
-{{ .UserCodeContext }}
+### Provide code
 
-The tests MUST include the following external imports:
-{{ .ExternalImport }}
+Here is the code in `{{ .TestType}}` for which tests need to be generated:
 
-The tests MUST use the following package name:
-{{ .PackageName }}
+```{{ .Language}}
+{{ .UserCode}}
+```
 
-### Rules
-* Do not include triple backticks or language identifiers in the output.
-* Do not copy, quote, restate, or repeat any part of the user’s code (from `{{ .UserCode }}` or `{{ .UserCodeContext }}`) — including functions, structs, classes, constants, interfaces, or type definitions.
-* **Crucially, never redefine any `struct` or `interface` from the user's code. The test code must assume it is in the same package (`{{ .PackageName }}`) and already has access to all exported and unexported types from `{{ .UserCode }}` and `{{ .UserCodeContext }}`. The generated code must not contain `type T struct { ... }` or `type I interface { ... }` declarations.**
-* Do not generate mock functions or placeholder implementations.
-* Use only the functions, methods, and types that exist in the provided user code (`{{ .UserCode }}`) and context (`{{ .UserCodeContext }}`).
-* Use the exact package name: `package {{ .PackageName }}`.
-* Use only the standard testing framework for `{{ .Language }}` (e.g., `testing` in Go, `unittest` in Python, `JUnit` in Java, `pytest` for Python if typical).
-* Include only necessary imports required for running the tests, AND **must** also include the imports specified in `{{ .ExternalImport }}` (even if they seem unused by the test functions).
-* Output must be valid, compilable `{{ .Language }}` code that runs the specified `{{ .TestType }}` tests.
-* The generated tests must aim for 100% coverage and achieve at least 95% coverage of all logical branches, edge cases, and return paths for `{{ .UserCode }}`.
-* ** When generating test cases (e.g., in a table-driven test, xunit, suite), use a comment with the ⚠️ emoji to mark non-obvious, complex, or subtle edge cases.** (e.g., `// ⚠️ !!!ATTENTION!!! Test case for leap year bug`, `# ⚠️ Test with empty string after split`).
-* ** Add a ⚠️ sign and !!!ATTENTION!!! to the comment if you suspect the developer (or developers in general) doesn't frequently check this case and it could be expected behavior, or it could be something the function or method shouldn't behave like. For obvious cases, there's no need to add this warning.
-* Begin output with a checklist-style comment (e.g. `// ✅ Tests for ...`, `# ✅ Tests for ...`, etc.) specific to the function(s) in `{{ .UserCode }}`.
-* Produce only the test code — no markdown, explanations, or additional text.
-
-### Output Format
-* Start with a checklist-style comment (e.g. `// ✅ Tests for countWords`).
-* Then include only:
-    * the correct package declaration: `package {{ .PackageName }}`
-    * minimal imports required for standard testing *plus* all imports from `{{ .ExternalImport }}`.
-    * and complete test functions covering all logical branches and edge cases for `{{ .UserCode }}`. Non-obvious or subtle edge cases should be marked with a `⚠️` emoji in a comment.
-* The output must be ready to execute as a standalone test file for `{{ .TestType }}` tests in `{{ .Language }}`.
-* Never include or restate any of the user’s original code.
+### Output
+- Generate `{{ .TestType}}` tests in `{{ .Language}}`. The output must be valid, compilable code. Do not include any text other than the test code itself.
+- Output valid {{ .Language}} code only: begin with a checklist ({{ .Language}} comment style), then provide all imports, type stubs, and required tests.

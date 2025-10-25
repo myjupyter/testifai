@@ -63,9 +63,6 @@ Edit `testifai.json` to configure:
       "apiKey": "your-api-key-here"
     }
   },
-  "api": {
-    "endpoint": "http://localhost:6667"
-  },
   "output": {
     "testDir": null,
     "extension": ".spec"
@@ -78,3 +75,5 @@ Edit `testifai.json` to configure:
 - Node.js >= 18
 - Running testifai backend server
 - OpenAI API key
+
+The CLI connects to the bundled backend at `http://localhost:6667` automatically, so no additional API configuration is required. Generated tests are written to a `__tests__` folder next to each source file by default.
