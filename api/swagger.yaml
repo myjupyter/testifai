@@ -2,9 +2,17 @@ basePath: /
 definitions:
   server.GenerateContext:
     properties:
+      external_import:
+        items:
+          type: string
+        type: array
+      package_name:
+        type: string
       platform:
         type: string
       user_code:
+        type: string
+      user_code_context:
         type: string
     type: object
   server.Generated:
@@ -14,13 +22,9 @@ definitions:
     type: object
   server.Request:
     properties:
-      api_key:
-        type: string
       context:
         $ref: '#/definitions/server.GenerateContext'
       id:
-        type: string
-      provider:
         type: string
       testifai:
         $ref: '#/definitions/server.Testifai'

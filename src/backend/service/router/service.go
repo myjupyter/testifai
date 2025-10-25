@@ -2,9 +2,6 @@ package router
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"strings"
 
 	"github.com/myjupyter/testifai/src/backend/app/model"
 	"github.com/myjupyter/testifai/src/backend/service/prompt_builder"
@@ -16,39 +13,33 @@ type Provider interface {
 }
 
 type Service struct {
-	providers        []Provider
 	promptBuilderSrv *prompt_builder.Service
+	provider         Provider
 }
 
-func New(promptBuilderSrv *prompt_builder.Service, providers ...Provider) (*Service, error) {
-	if len(providers) == 0 {
-		return nil, errors.New("providers not provided")
-	}
+func New(
+	promptBuilderSrv *prompt_builder.Service,
+	provider Provider,
+) (*Service, error) {
 	return &Service{
-		providers:        providers,
+		provider:         provider,
 		promptBuilderSrv: promptBuilderSrv,
 	}, nil
 }
 
 func (s *Service) Generate(ctx context.Context, request model.GenerateRequest) (model.AiGenerateResult, error) {
-	for _, provider := range s.providers {
-		if strings.EqualFold(provider.ProviderName(), request.Provider) {
-			prompt, err := s.promptBuilderSrv.BuildPrompt(request)
-			if err != nil {
-				return model.AiGenerateResult{}, fmt.Errorf("router: build prompt err: %w", err)
-			}
-			generate, err := provider.Generate(ctx, model.AiGenerateForm{
-				ApiKey:       request.ApiKey,
-				Prompt:       prompt,
-				SystemPrompt: "",
-			})
-			if err != nil {
-				return model.AiGenerateResult{}, err
-			}
-			return generate, nil
-		}
+	prompt, err := s.promptBuilderSrv.BuildPrompt(request)
+	if err != nil {
+		return model.AiGenerateResult{}, err
 	}
+	generate, err := s.provider.Generate(ctx, model.AiGenerateForm{
+		Prompt:       prompt,
+		SystemPrompt: "",
+	})
 
-	return model.AiGenerateResult{}, fmt.Errorf("router: provider [%s] not found", request.Provider)
+	if err != nil {
+		return model.AiGenerateResult{}, err
+	}
+	return generate, nil
 
 }
