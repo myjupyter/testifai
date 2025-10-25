@@ -1,11 +1,8 @@
 {
     "provider": {
         "openai": {
-            "apiKey": "<YOUR_OPENAI_API_KEY>"
+            "apiKey": ""
         }
-    },
-    "api": {
-        "endpoint": "http://localhost:6667"
     },
     "output": {
         "testDir": null,

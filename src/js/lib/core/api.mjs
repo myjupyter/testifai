@@ -1,12 +1,12 @@
 import { randomUUID } from 'crypto';
 import { getEffectiveConfig, validateConfig } from './config.mjs';
+import { TESTIFAI_URL } from '../constants.mjs';
 
 /**
  * @typedef {import('../types.mjs').TestifaiConfig} TestifaiConfig
  * @typedef {import('../types.mjs').ScanResult} ScanResult
  * @typedef {import('../types.mjs').APIRequest} APIRequest
  * @typedef {import('../types.mjs').APIResponse} APIResponse
- * @typedef {import('../types.mjs').APIStatus} APIStatus
  * @typedef {import('../types.mjs').GenerationOptions} GenerationOptions
  */
 
@@ -16,7 +16,7 @@ import { getEffectiveConfig, validateConfig } from './config.mjs';
  * @param {ScanResult} scanResult - Scan result from parser
  * @returns {APIRequest} API request payload
  */
-function createAPIRequest(config, scanResult) {
+const createAPIRequest = (config, scanResult) => {
     const requestId = randomUUID();
 
     return {
@@ -31,24 +31,24 @@ function createAPIRequest(config, scanResult) {
             test_type: scanResult.testType,
         },
     };
-}
+};
 
 /**
  * Send HTTP request to backend API
- * @param {string} endpoint - API endpoint URL
  * @param {APIRequest} payload - Request payload
  * @param {GenerationOptions} [options={}] - Request options
  * @returns {Promise<APIResponse>} API response
  */
-async function makeAPIRequest(endpoint, payload, options = {}) {
+const makeAPIRequest = async (payload, options = {}) => {
     const requestOptions = /** @type {GenerationOptions} */ (options);
     const { timeout = 30000 } = requestOptions;
 
     const controller = new AbortController();
+
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
-        const response = await fetch(`${endpoint}/generate`, {
+        const response = await fetch(`${TESTIFAI_URL}/generate`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -76,19 +76,19 @@ async function makeAPIRequest(endpoint, payload, options = {}) {
         }
 
         if ('code' in err && err.code === 'ECONNREFUSED') {
-            throw new Error(`Cannot connect to backend API at ${endpoint}. Is the server running?`);
+            throw new Error(`Cannot connect to backend API at ${TESTIFAI_URL}. Is the server running?`);
         }
 
         throw err;
     }
-}
+};
 
 /**
  * Validate API response
  * @param {APIResponse} response - API response to validate
  * @throws {Error} If response is invalid
  */
-function validateAPIResponse(response) {
+const validateAPIResponse = (response) => {
     if (!response) {
         throw new Error('Empty response from API');
     }
@@ -108,7 +108,7 @@ function validateAPIResponse(response) {
     if (response.generated.test_code.trim().length === 0) {
         throw new Error('Generated test code is empty');
     }
-}
+};
 
 /**
  * Send scan result to API and get generated tests
@@ -117,7 +117,7 @@ function validateAPIResponse(response) {
  * @param {GenerationOptions} [options={}] - Request options
  * @returns {Promise<APIResponse>} API response with generated tests
  */
-export async function sendToAPI(config, scanResult, options = {}) {
+export const sendToAPI = async (config, scanResult, options = {}) => {
     // Validate inputs
     const effectiveConfig = getEffectiveConfig(config);
 
@@ -128,21 +128,20 @@ export async function sendToAPI(config, scanResult, options = {}) {
     }
 
     const generationOptions = /** @type {GenerationOptions} */ (options);
-    const { verbose = false, timeout = 30000 } = generationOptions;
+    const { verbose = false } = generationOptions;
 
     try {
-        // Create request payload
         const payload = createAPIRequest(effectiveConfig, scanResult);
 
         if (verbose) {
-            console.log(`Sending request to ${effectiveConfig.api.endpoint}/generate`);
+            console.log(`Sending request to ${TESTIFAI_URL}/generate`);
             console.log(`Function: ${scanResult.functionName}`);
             console.log(`Test type: ${scanResult.testType}`);
             console.log(`Language: ${scanResult.language}`);
         }
 
         // Make API request
-        const response = await makeAPIRequest(effectiveConfig.api.endpoint, payload, generationOptions);
+        const response = await makeAPIRequest(payload, generationOptions);
 
         // Validate response
         validateAPIResponse(response);
@@ -155,7 +154,6 @@ export async function sendToAPI(config, scanResult, options = {}) {
     } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
 
-        // Add context to error messages
         const contextualError = new Error(`Failed to generate tests for ${scanResult.functionName}: ${err.message}`);
 
         /** @type {Error & { originalError?: Error; scanResult?: ScanResult }} */ (contextualError).originalError = err;
@@ -163,62 +161,4 @@ export async function sendToAPI(config, scanResult, options = {}) {
             scanResult;
         throw contextualError;
     }
-}
-
-/**
- * Test API connection
- * @param {TestifaiConfig} config - Configuration object
- * @returns {Promise<boolean>} Whether API is reachable
- */
-export async function testAPIConnection(config) {
-    const effectiveConfig = getEffectiveConfig(config);
-
-    try {
-        // Try a simple request to see if the server is running
-        await fetch(effectiveConfig.api.endpoint, {
-            method: 'GET',
-            headers: { Accept: 'application/json' },
-        });
-
-        return true;
-    } catch (error) {
-        return false;
-    }
-}
-
-/**
- * Get API status and information
- * @param {TestifaiConfig} config - Configuration object
- * @returns {Promise<APIStatus>} API status information
- */
-export async function getAPIStatus(config) {
-    const effectiveConfig = getEffectiveConfig(config);
-    const { endpoint } = effectiveConfig.api;
-
-    try {
-        const isReachable = await testAPIConnection(effectiveConfig);
-
-        if (!isReachable) {
-            return {
-                status: 'unreachable',
-                endpoint,
-                message: 'Cannot connect to API endpoint',
-            };
-        }
-
-        return {
-            status: 'reachable',
-            endpoint,
-            message: 'API endpoint is reachable',
-        };
-    } catch (error) {
-        const err = error instanceof Error ? error : new Error(String(error));
-
-        return {
-            status: 'error',
-            endpoint,
-            message: err.message,
-            error: err,
-        };
-    }
-}
+};

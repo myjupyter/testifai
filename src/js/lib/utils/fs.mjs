@@ -1,4 +1,4 @@
-import { statSync, existsSync } from 'fs';
+import { statSync, existsSync } from 'lib/utils/fs.mjs';
 import { join } from 'path';
 
 /**

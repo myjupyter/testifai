@@ -6,7 +6,6 @@ import { join } from 'path';
  * @typedef {import('../types.mjs').InitOptions} InitOptions
  * @typedef {import('../types.mjs').ProviderConfig} ProviderConfig
  * @typedef {import('../types.mjs').OpenAIConfig} OpenAIConfig
- * @typedef {import('../types.mjs').APIConfig} APIConfig
  * @typedef {import('../types.mjs').OutputConfig} OutputConfig
  * @typedef {import('../types.mjs').ScanConfig} ScanConfig
  */
@@ -21,16 +20,30 @@ const DEFAULT_CONFIG = {
             apiKey: '<YOUR_OPENAI_API_KEY>',
         },
     },
-    api: {
-        endpoint: 'http://localhost:6667',
-    },
     output: {
-        testDir: null, // null means next to source file
+        testDir: null, // null means next to source file (handled as __tests__ by default in generator)
         extension: '.spec',
     },
     scan: {
         include: ['**/*.ts', '**/*.js'],
         exclude: ['node_modules/**', '**/*.spec.*', '**/*.test.*'],
+    },
+};
+
+/**
+ * Template for user-facing configuration file (excludes internal fields)
+ */
+const USER_CONFIG_TEMPLATE = {
+    provider: {
+        openai: {
+            apiKey: DEFAULT_CONFIG.provider.openai.apiKey,
+        },
+    },
+    output: {
+        ...DEFAULT_CONFIG.output,
+    },
+    scan: {
+        ...DEFAULT_CONFIG.scan,
     },
 };
 
@@ -50,11 +63,6 @@ function getConfigPath(configPath) {
     // Check for package.json (JS/TS project)
     if (existsSync(join(cwd, 'package.json'))) {
         return join(cwd, 'testifai.json');
-    }
-
-    // Check for go.mod (Go project)
-    if (existsSync(join(cwd, 'go.mod'))) {
-        return join(cwd, 'testifai.yaml');
     }
 
     // Default to JSON
@@ -113,7 +121,7 @@ export async function initConfig(options = {}) {
     }
 
     try {
-        const configContent = JSON.stringify(DEFAULT_CONFIG, null, 2);
+        const configContent = JSON.stringify(USER_CONFIG_TEMPLATE, null, 2);
 
         writeFileSync(configPath, configContent, 'utf8');
 
@@ -121,7 +129,7 @@ export async function initConfig(options = {}) {
         console.log('');
         console.log('Please update the configuration with your API key:');
         console.log('- Set provider.openai.apiKey to your OpenAI API key');
-        console.log('- Adjust api.endpoint if your backend runs on a different port');
+        console.log('- Adjust output or scan settings if you need custom paths or patterns');
         console.log('');
         console.log('Example:');
         console.log(
@@ -158,11 +166,6 @@ export function validateConfig(config) {
         throw new Error('OpenAI API key is required. Please set provider.openai.apiKey in your config.');
     }
 
-    if (!config.api || !config.api.endpoint) {
-        throw new Error('API endpoint is required. Please set api.endpoint in your config.');
-    }
-
-    // Validate API key format (basic check)
     const { apiKey } = config.provider.openai;
 
     if (apiKey === '<YOUR_OPENAI_API_KEY>' || apiKey.length < 10) {
@@ -181,7 +184,6 @@ export function getEffectiveConfig(config) {
 
     const {
         provider: providerConfig = /** @type {Partial<ProviderConfig>} */ ({}),
-        api: apiConfig = /** @type {Partial<APIConfig>} */ ({}),
         output: outputConfig = /** @type {Partial<OutputConfig>} */ ({}),
         scan: scanConfig = /** @type {Partial<ScanConfig>} */ ({}),
         ...additionalConfig
@@ -199,10 +201,6 @@ export function getEffectiveConfig(config) {
                 ...DEFAULT_CONFIG.provider.openai,
                 ...openaiConfig,
             },
-        },
-        api: {
-            ...DEFAULT_CONFIG.api,
-            ...apiConfig,
         },
         output: {
             ...DEFAULT_CONFIG.output,
