@@ -4,13 +4,10 @@ type Test struct {
 	Name string
 }
 
-//go:generate testifai --type=xunit --output=other_test.go
-
 func (s *Test) SetName(name string) {
 	s.Name = name
 }
 
-//go:generate testifai --func=GetName --type=suite --output=get_name_suite_ai_test.go
 func (s *Test) GetName() string {
 	return s.Name
 }
@@ -38,6 +35,7 @@ func c() int {
 	return 3
 }
 
-func D() int {
-	return a() + b() + c()
+//go:generate testifai --func=D --type=table --output=D_ai_test.go
+func D(x int) int {
+	return x + a() + b() + c()
 }
