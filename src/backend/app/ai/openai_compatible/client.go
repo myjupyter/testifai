@@ -63,7 +63,6 @@ func (c *Client) Generate(ctx context.Context, form model.AiGenerateForm) (model
 	})
 
 	messages := []map[string]interface{}{
-
 		{"role": "user", "content": content},
 	}
 
