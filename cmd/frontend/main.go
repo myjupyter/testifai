@@ -8,6 +8,7 @@ import (
 	"github.com/myjupyter/testifai/pkg/path"
 	"github.com/myjupyter/testifai/pkg/vcs"
 	"github.com/myjupyter/testifai/src/frontend"
+	"github.com/myjupyter/testifai/src/frontend/client"
 	parserv2 "github.com/myjupyter/testifai/src/frontend/parser/v2"
 	"github.com/spf13/cobra"
 )
@@ -40,26 +41,46 @@ var rootCmd = &cobra.Command{
 		}
 
 		for _, collect := range collection {
-			fmt.Println()
-			fmt.Println("пакет")
-			fmt.Println(collect.PackageName)
-			fmt.Println(collect.FunctionName)
-			fmt.Println()
-			fmt.Println("тело")
-			fmt.Println(collect.BodyWithReceiver)
-			fmt.Println()
-			fmt.Println("внешние зависимости")
-			fmt.Println(collect.ExternalImports)
-			fmt.Println()
-			fmt.Println("внутренние зависимости")
-			fmt.Println(collect.InternalDependencies)
-			// result, err := frontend.SendRequest(frontend.RequestData{
-			// 	Host:     "localhost:6667",
-			// 	UserCode: collect.Code,
-			// 	Provider: "openai",
-			// 	TestType: collect.Options.TestType,
-			// 	Platform: "go",
-			// })
+			//fmt.Println()
+			//fmt.Println("пакет")
+			//fmt.Println(collect.PackageName)
+			//fmt.Println(collect.FunctionName)
+			//fmt.Println()
+			//fmt.Println("тело")
+			//fmt.Println(collect.BodyWithReceiver)
+			//fmt.Println()
+			//fmt.Println("внешние зависимости")
+			//fmt.Println(collect.ExternalImports)
+			//fmt.Println()
+			//fmt.Println("внутренние зависимости")
+			//fmt.Println(collect.InternalDependencies)
+			//result, err := frontend.SendRequest(frontend.RequestData{
+			//	Host:     "localhost:6667",
+			//	UserCode: collect.Code,
+			//	Provider: "openai",
+			//	TestType: collect.Options.TestType,
+			//	Platform: "go",
+			//})
+
+			response, err := client.SendRequest(client.RequestData{
+				Host:            "localhost:6667",
+				UserCode:        collect.BodyWithReceiver,
+				UserCodeContext: collect.InternalDependencies,
+				ExternalImports: collect.ExternalImports,
+				PackageName:     collect.PackageName,
+				TestType:        testType,
+				Platform:        "go",
+			})
+
+			if err != nil {
+				return err
+			}
+
+			err = os.WriteFile(outputPath, []byte(response.GeneratedTest), 0644)
+			if err != nil {
+				return err
+			}
+
 		}
 
 		return nil

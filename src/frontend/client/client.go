@@ -7,20 +7,21 @@ import (
 
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
-	"github.com/google/uuid"
 	"github.com/myjupyter/testifai/src/frontend/client/client"
 	"github.com/myjupyter/testifai/src/frontend/client/client/generator"
 	"github.com/myjupyter/testifai/src/frontend/client/models"
 )
 
 type RequestData struct {
-	Host     string
-	UserCode string
-	Token    string
-	Provider string
-	TestType string
-	APIKey   string
-	Platform string
+	Host            string
+	UserCode        string
+	UserCodeContext string
+	ExternalImports []string
+	PackageName     string
+	Provider        string
+	TestType        string
+	APIKey          string
+	Platform        string
 }
 
 type Result struct {
@@ -32,13 +33,13 @@ func SendRequest(reqData RequestData) (Result, error) {
 	apiClient := client.New(transport, strfmt.Default)
 	generate, err := apiClient.Generator.PostGenerate(&generator.PostGenerateParams{
 		Request: &models.ServerRequest{
-			APIKey: reqData.APIKey,
 			Context: &models.ServerGenerateContext{
-				Platform: reqData.Platform,
-				UserCode: reqData.UserCode,
+				ExternalImport:  reqData.ExternalImports,
+				PackageName:     reqData.PackageName,
+				Platform:        reqData.Platform,
+				UserCode:        reqData.UserCode,
+				UserCodeContext: reqData.UserCodeContext,
 			},
-			ID:       uuid.New().String(),
-			Provider: reqData.Provider,
 			Testifai: &models.ServerTestifai{
 				TestType: reqData.TestType,
 			},

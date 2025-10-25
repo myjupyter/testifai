@@ -9,7 +9,6 @@ type AiGenerateResult struct {
 }
 
 type AiGenerateForm struct {
-	ApiKey       string
 	Prompt       string
 	SystemPrompt string
 }

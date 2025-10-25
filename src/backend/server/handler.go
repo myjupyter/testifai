@@ -36,12 +36,12 @@ func (h *Handler) Handle(c *gin.Context) {
 	}
 
 	generate, err := h.routerSrv.Generate(c, model.GenerateRequest{
-		ApiKey:   req.ApiKey,
-		Provider: req.Provider,
-		Id:       req.Id,
 		Context: model.GenerateContext{
-			UserCode: req.Context.UserCode,
-			Plarform: req.Context.Plarform,
+			UserCode:        req.Context.UserCode,
+			UserCodeContext: req.Context.UserCodeContext,
+			PackageName:     req.Context.PackageName,
+			ExternalImport:  req.Context.ExternalImport,
+			Plarform:        req.Context.Plarform,
 		},
 		Testifai: model.Testifai{
 			TestType: testTypeTo(req.Testifai.TestType),
@@ -67,16 +67,17 @@ func testTypeTo(strTestType string) model.TestType {
 }
 
 type Request struct {
-	ApiKey   string          `json:"api_key"`
-	Provider string          `json:"provider"`
 	Id       string          `json:"id"`
 	Context  GenerateContext `json:"context"`
 	Testifai Testifai        `json:"testifai"`
 }
 
 type GenerateContext struct {
-	UserCode string `json:"user_code"`
-	Plarform string `json:"platform"`
+	UserCode        string   `json:"user_code"`
+	Plarform        string   `json:"platform"`
+	UserCodeContext string   `json:"user_code_context"`
+	PackageName     string   `json:"package_name"`
+	ExternalImport  []string `json:"external_import"`
 }
 
 type Testifai struct {
