@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"strings"
 	"text/template"
 
 	"github.com/myjupyter/testifai/src/backend/app/model"
@@ -28,9 +29,12 @@ func New() (*Service, error) {
 }
 
 type templateModel struct {
-	TestType string
-	Language string
-	UserCode string
+	TestType        string
+	Language        string
+	UserCode        string
+	UserCodeContext string
+	ExternalImport  string
+	PackageName     string
 }
 
 func (s *Service) BuildPrompt(request model.GenerateRequest) (string, error) {
@@ -42,9 +46,12 @@ func (s *Service) BuildPrompt(request model.GenerateRequest) (string, error) {
 	}
 
 	err = s.tmpl.Execute(buffer, templateModel{
-		TestType: testType,
-		Language: request.Context.Plarform,
-		UserCode: request.Context.UserCode,
+		TestType:        testType,
+		Language:        request.Context.Plarform,
+		UserCode:        request.Context.UserCode,
+		UserCodeContext: request.Context.UserCodeContext,
+		ExternalImport:  strings.Join(request.Context.ExternalImport, "\n"),
+		PackageName:     request.Context.PackageName,
 	})
 	if err != nil {
 		return "", fmt.Errorf("error build prompt template: %v", err)

@@ -17,11 +17,20 @@ import (
 // swagger:model server.GenerateContext
 type ServerGenerateContext struct {
 
+	// external import
+	ExternalImport []string `json:"external_import"`
+
+	// package name
+	PackageName string `json:"package_name,omitempty"`
+
 	// platform
 	Platform string `json:"platform,omitempty"`
 
 	// user code
 	UserCode string `json:"user_code,omitempty"`
+
+	// user code context
+	UserCodeContext string `json:"user_code_context,omitempty"`
 }
 
 // Validate validates this server generate context

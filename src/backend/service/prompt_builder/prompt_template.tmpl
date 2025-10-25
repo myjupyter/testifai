@@ -26,15 +26,15 @@ The tests MUST use the following package name:
 * Include only necessary imports required for running the tests, AND **must** also include the imports specified in `{{ .ExternalImport }}` (even if they seem unused by the test functions).
 * Output must be valid, compilable `{{ .Language }}` code that runs the specified `{{ .TestType }}` tests.
 * The generated tests must aim for 100% coverage and achieve at least 95% coverage of all logical branches, edge cases, and return paths for `{{ .UserCode }}`.
+* **When generating test cases (e.g., in a table-driven test), use a comment with the ⚠️ emoji to mark non-obvious, complex, or subtle edge cases.** (e.g., `// ⚠️ !!!WARNING!!! Test case for leap year bug`, `# ⚠️ Test with empty string after split`).
 * Begin output with a checklist-style comment (e.g. `// ✅ Tests for ...`, `# ✅ Tests for ...`, etc.) specific to the function(s) in `{{ .UserCode }}`.
 * Produce only the test code — no markdown, explanations, or additional text.
-* 
 
 ### Output Format
 * Start with a checklist-style comment (e.g. `// ✅ Tests for countWords`).
 * Then include only:
     * the correct package declaration: `package {{ .PackageName }}`
     * minimal imports required for standard testing *plus* all imports from `{{ .ExternalImport }}`.
-    * and complete test functions covering all logical branches and edge cases for `{{ .UserCode }}`.
+    * and complete test functions covering all logical branches and edge cases for `{{ .UserCode }}`. Non-obvious or subtle edge cases should be marked with a `⚠️` emoji in a comment and '!!!WARNING!!!'.
 * The output must be ready to execute as a standalone test file for `{{ .TestType }}` tests in `{{ .Language }}`.
 * Never include or restate any of the user’s original code.
