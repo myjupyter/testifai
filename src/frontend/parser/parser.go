@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -83,7 +84,7 @@ func ParseFile(
 			start := tf.Offset(x.Pos())
 			end := tf.Offset(x.End())
 
-			target.Code = string(src[start:end])
+			target.Code = fmt.Sprintf("package %s\n\n", f.Name) + string(src[start:end])
 			target.Options = currentOptions
 			targets = append(targets, target)
 
