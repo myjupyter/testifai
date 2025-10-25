@@ -21,8 +21,8 @@ func main() {
 	cfg := &config.Config{
 		Host:        "127.0.0.1",
 		ListenAddr:  ":6667",
-		LLMEndpoint: "https://api.openai.com/v1/chat/completions",
-		LLMAPIKey:   "",
+		LLMEndpoint: "http://llm-manager.k.avito.ru/v1/chat/completions",
+		LLMAPIKey:   "sk-e59959b5-483c-4671-abc1-bf0be292ab6f",
 		LLMProvider: "openai",
 	}
 
@@ -35,7 +35,7 @@ func main() {
 		openai_compatible.New(
 			cfg.LLMProvider,
 			cfg.LLMEndpoint,
-			"gpt-4o",
+			"Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8",
 			cfg.LLMAPIKey,
 		),
 	)
