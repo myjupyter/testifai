@@ -1,6 +1,7 @@
 package path
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -46,4 +47,33 @@ func GetOutFilepath(fname string) string {
 	sourceCodeFile = strings.TrimSuffix(sourceCodeFile, testSuffix) + testSuffix
 
 	return filepath.Join(dname, sourceCodeFile)
+}
+
+// findRepoRoot ищет корень репозитория, двигаясь вверх от текущей директории
+// и находя go.mod.
+func GetRepoRoot() (string, error) {
+	// Получаем текущую рабочую директорию, откуда был запущен go:generate
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	// Начинаем поиск с текущей директории
+	dir := wd
+	for {
+		// Проверяем, есть ли go.mod в текущей директории
+		goModPath := filepath.Join(dir, "go.mod")
+		if _, err := os.Stat(goModPath); err == nil {
+			// Нашли! Возвращаем этот путь.
+			return dir, nil
+		}
+
+		// Поднимаемся на один уровень вверх
+		parentDir := filepath.Dir(dir)
+		if parentDir == dir {
+			// Достигли корня файловой системы (/), но ничего не нашли
+			return "", errors.New("не удалось найти корень репозитория (go.mod не найден)")
+		}
+		dir = parentDir
+	}
 }
