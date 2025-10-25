@@ -180,7 +180,6 @@ export async function main() {
                 return;
             }
 
-            // Generate tests
             console.log('🚀 Generating tests...');
 
             const generationTasks = scanResults.map(async (result) => {

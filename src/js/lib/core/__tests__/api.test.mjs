@@ -80,7 +80,7 @@ const scanResult = /** @type {ScanResult} */ ({
     functionName: 'sample',
     functionCode: 'export function sample() { return true; }',
     functionStartLine: 1,
-    language: 'ts',
+    platform: 'ts',
 });
 
 describe('api core utilities', () => {

@@ -109,7 +109,6 @@ export async function loadConfig(configPath) {
  * @param {InitOptions} [options={}] - Options for initialization
  */
 export async function initConfig(options = {}) {
-    /** @type {InitOptions} */
     const initOptions = options;
     const configPath = getConfigPath(initOptions.config);
 

@@ -59,7 +59,7 @@ export function add(a, b) {
         expect(result.file).toBe(filePath);
         expect(result.functionName).toBe('add');
         expect(result.functionCode).toContain('return a + b;');
-        expect(result.language).toBe('ts');
+        expect(result.platform).toBe('ts');
         expect(validateScanResult(/** @type {ScanResult} */ (result))).toBe(true);
     });
 
@@ -79,7 +79,7 @@ export const multiply = (a, b) => a * b;
         expect(result.file).toBe(filePath);
         expect(result.functionName).toBe('multiply');
         expect(result.functionCode).toContain('a * b');
-        expect(result.language).toBe('js');
+        expect(result.platform).toBe('js');
         expect(validateScanResult(/** @type {ScanResult} */ (result))).toBe(true);
     });
 
@@ -185,13 +185,13 @@ export function validateUsers(users: User[]): boolean {
         expect(results).toHaveLength(2);
         expect(results[0].functionName).toBe('processUser');
         expect(results[0].testType).toBe('table');
-        expect(results[0].language).toBe('ts');
+        expect(results[0].platform).toBe('ts');
         expect(results[1].functionName).toBe('validateUsers');
         expect(results[1].testType).toBe('table');
-        expect(results[1].language).toBe('ts');
+        expect(results[1].platform).toBe('ts');
     });
 
-    it('validates comment language extraction', () => {
+    it('validates comment platform extraction', () => {
         const jsComment = '// js:generate testifai: -type=xunit -timeout=5000';
         const tsComment = '// ts:generate testifai: -type=table -parallel=true';
 
@@ -230,8 +230,8 @@ export function tsFunction(): string {
 
         expect(results).toHaveLength(2);
 
-        const jsResult = results.find((r) => r.language === 'js');
-        const tsResult = results.find((r) => r.language === 'ts');
+        const jsResult = results.find((r) => r.platform === 'js');
+        const tsResult = results.find((r) => r.platform === 'ts');
 
         expect(jsResult?.functionName).toBe('jsFunction');
         expect(jsResult?.testType).toBe('xunit');
@@ -265,7 +265,7 @@ export class Calculator {
         expect(result.functionCode).toContain('class Calculator');
         expect(result.functionCode).toContain('add(a: number, b: number)');
         expect(result.functionCode).toContain('multiply(a: number, b: number)');
-        expect(result.language).toBe('ts');
+        expect(result.platform).toBe('ts');
     });
 
     it('recognizes async arrow functions', async () => {
@@ -287,7 +287,7 @@ export const fetchData = async (url) => {
         expect(result.functionName).toBe('fetchData');
         expect(result.functionCode).toContain('async (url)');
         expect(result.functionCode).toContain('await fetch(url)');
-        expect(result.language).toBe('js');
+        expect(result.platform).toBe('js');
     });
 
     it('recognizes short arrow functions', async () => {

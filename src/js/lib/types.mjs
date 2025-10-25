@@ -41,7 +41,7 @@
  * @property {string} functionName - Name of the function to test
  * @property {string} functionCode - Complete function code
  * @property {number} functionStartLine - Line where function starts
- * @property {Language} language - Programming language
+ * @property {Platform} platform - Programming platform
  */
 
 /**
@@ -49,13 +49,13 @@
  */
 
 /**
- * @typedef {'ts'|'js'} Language
+ * @typedef {'ts'|'js'} Platform
  */
 
 /**
  * @typedef {Object} APIRequest
- * @property {string} api_key - API key for authentication
- * @property {string} provider - Provider name (e.g., 'OpenAI')
+ * @property {string} [api_key] - API key for authentication
+ * @property {string} [provider] - Provider name (e.g., 'OpenAI')
  * @property {string} id - Unique request ID
  * @property {RequestContext} context - Request context
  * @property {TestifaiRequest} testifai - Testifai specific data
@@ -63,7 +63,7 @@
 
 /**
  * @typedef {Object} RequestContext
- * @property {Language} language - Programming language
+ * @property {Platform} platform - Programming platform
  * @property {string} user_code - Function code to test
  */
 

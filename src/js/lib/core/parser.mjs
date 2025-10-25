@@ -70,13 +70,13 @@ const FUNCTION_PATTERNS = [
 
 /**
  * Check whether directive and type are allowed for a given language
- * @param {import('../types.mjs').Language} language
+ * @param {import('../types.mjs').Platform} platform
  * @param {string} directive
  * @param {string} testType
  * @returns {boolean}
  */
-function isSupportedDirective(language, directive, testType) {
-    if (language === 'ts') {
+function isSupportedDirective(platform, directive, testType) {
+    if (platform === 'ts') {
         return directive === 'ts' && testType === 'table';
     }
 
@@ -367,7 +367,7 @@ function parseFile(filePath, options = { verbose: false }) {
                     functionName: functionInfo.functionName,
                     functionCode: functionInfo.functionCode,
                     functionStartLine: functionInfo.startLine,
-                    language: /** @type {import('../types.mjs').Language} */ (fileLanguage),
+                    platform: /** @type {import('../types.mjs').Platform} */ (fileLanguage),
                 });
 
                 // If this is a class, also parse inside it for method comments
@@ -401,7 +401,7 @@ function parseFile(filePath, options = { verbose: false }) {
  * @param {string[]} lines - Array of file lines
  * @param {number} classStartLine - Line where class starts (0-based)
  * @param {string} filePath - File path
- * @param {import('../types.mjs').Language} fileLanguage - File language
+ * @param {import('../types.mjs').Platform} fileLanguage - File language
  * @param {ScanOptions} parseOptions - Parse options
  * @returns {ScanResult[]} Array of scan results for class methods
  */
@@ -479,7 +479,7 @@ function parseInsideClass(lines, classStartLine, filePath, fileLanguage, parseOp
                 functionName: methodInfo.functionName,
                 functionCode: methodInfo.functionCode,
                 functionStartLine: methodInfo.startLine,
-                language: /** @type {import('../types.mjs').Language} */ (fileLanguage),
+                platform: /** @type {import('../types.mjs').Platform} */ (fileLanguage),
             });
         } else if (parseOptions.verbose) {
             console.warn(`Warning: testifai comment found but no method follows at ${filePath}:${i + 1}`);
@@ -667,8 +667,8 @@ export function validateScanResult(result) {
         Boolean(result.testType) &&
         Boolean(result.functionName) &&
         Boolean(result.functionCode) &&
-        Boolean(result.language) &&
+        Boolean(result.platform) &&
         ['xunit', 'table', 'suite'].includes(result.testType) &&
-        ['ts', 'js'].includes(result.language)
+        ['ts', 'js'].includes(result.platform)
     );
 }

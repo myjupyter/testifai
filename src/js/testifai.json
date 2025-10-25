@@ -1,7 +1,7 @@
 {
     "provider": {
         "openai": {
-            "apiKey": ""
+            "apiKey": "<YOUR_OPENAI_API_KEY>"
         }
     },
     "output": {

@@ -71,7 +71,7 @@ function formatTestCode(testCode, scanResult, testFilePath) {
     let formattedCode = testCode.trim();
 
     // Ensure proper imports for TypeScript
-    if (scanResult.language === 'ts' && !formattedCode.includes('import')) {
+    if (scanResult.platform === 'ts' && !formattedCode.includes('import')) {
         // Add basic imports if not present
         const testDir = dirname(testFilePath);
         const sourceWithoutExt = file.slice(0, -extname(file).length);

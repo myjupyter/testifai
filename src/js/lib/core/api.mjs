@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { getEffectiveConfig, validateConfig } from './config.mjs';
 import { TESTIFAI_URL } from '../constants.mjs';
+import { request } from '../utils/request.mjs';
 
 /**
  * @typedef {import('../types.mjs').TestifaiConfig} TestifaiConfig
@@ -20,11 +21,9 @@ const createAPIRequest = (config, scanResult) => {
     const requestId = randomUUID();
 
     return {
-        api_key: config.provider.openai.apiKey,
-        provider: 'OpenAI',
         id: requestId,
         context: {
-            language: scanResult.language,
+            platform: scanResult.platform,
             user_code: scanResult.functionCode,
         },
         testifai: {
@@ -43,35 +42,37 @@ const makeAPIRequest = async (payload, options = {}) => {
     const requestOptions = /** @type {GenerationOptions} */ (options);
     const { timeout = 30000 } = requestOptions;
 
-    const controller = new AbortController();
-
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-
     try {
-        const response = await fetch(`${TESTIFAI_URL}/generate`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-            },
-            body: JSON.stringify(payload),
-            signal: controller.signal,
+        console.log('🔄 Starting request.post...');
+        const response = await request.post('generate', {
+            json: payload,
+            timeout: timeout,
         });
 
-        clearTimeout(timeoutId);
+        console.log('✅ Got response, parsing JSON...');
 
-        if (!response.ok) {
+        return await response.json();
+    } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+
+        if ('cause' in err) {
+            console.log('Error Cause:', err.cause);
+        }
+
+        if (err.message.includes('bad port') || err.message.includes('6667')) {
+            throw new Error(`CRITICAL: ky failed to bypass "bad port" restriction: ${err.message}`);
+        }
+
+        if (err.name === 'HTTPError') {
+            /** @type {any} */
+            const { response } = err;
+
             const errorText = await response.text();
 
             throw new Error(`API request failed: ${response.status} ${response.statusText}\n${errorText}`);
         }
 
-        return await response.json();
-    } catch (error) {
-        clearTimeout(timeoutId);
-        const err = error instanceof Error ? error : new Error(String(error));
-
-        if (err.name === 'AbortError') {
+        if (err.name === 'TimeoutError') {
             throw new Error(`API request timed out after ${timeout}ms`);
         }
 
@@ -79,6 +80,15 @@ const makeAPIRequest = async (payload, options = {}) => {
             throw new Error(`Cannot connect to backend API at ${TESTIFAI_URL}. Is the server running?`);
         }
 
+        if ('code' in err && (err.code === 'ENOTFOUND' || err.code === 'ECONNRESET')) {
+            throw new Error(`Network error (${err.code}): ${err.message}`);
+        }
+
+        if (err.name === 'RequestError') {
+            throw new Error(`Request failed: ${err.message}`);
+        }
+
+        console.log('🔧 Unhandled error type, rethrowing original');
         throw err;
     }
 };
@@ -118,7 +128,6 @@ const validateAPIResponse = (response) => {
  * @returns {Promise<APIResponse>} API response with generated tests
  */
 export const sendToAPI = async (config, scanResult, options = {}) => {
-    // Validate inputs
     const effectiveConfig = getEffectiveConfig(config);
 
     validateConfig(effectiveConfig);
@@ -137,13 +146,15 @@ export const sendToAPI = async (config, scanResult, options = {}) => {
             console.log(`Sending request to ${TESTIFAI_URL}/generate`);
             console.log(`Function: ${scanResult.functionName}`);
             console.log(`Test type: ${scanResult.testType}`);
-            console.log(`Language: ${scanResult.language}`);
+            console.log(`Language: ${scanResult.platform}`);
         }
 
-        // Make API request
+        console.log('1)');
+
         const response = await makeAPIRequest(payload, generationOptions);
 
-        // Validate response
+        console.log('2)');
+
         validateAPIResponse(response);
 
         if (verbose) {
@@ -159,6 +170,8 @@ export const sendToAPI = async (config, scanResult, options = {}) => {
         /** @type {Error & { originalError?: Error; scanResult?: ScanResult }} */ (contextualError).originalError = err;
         /** @type {Error & { originalError?: Error; scanResult?: ScanResult }} */ (contextualError).scanResult =
             scanResult;
+
+        console.log('🔧 Rethrowing contextual error');
         throw contextualError;
     }
 };

@@ -18,7 +18,7 @@ const scanResult = /** @type {ScanResult} */ ({
     functionCode: 'export function add(a, b) { return a + b; }',
     functionStartLine: 1,
     testType: 'table',
-    language: 'ts',
+    platform: 'ts',
     comment: '// ts:generate testifai: -type=table',
     line: 1,
     additionalParams: '',
