@@ -1,5 +1,5 @@
 {
-  "name": "testifai-cli",
+  "name": "testifai-js",
   "version": "0.1.0",
   "description": "CLI tool for generating tests from comments in TypeScript and JavaScript code",
   "type": "module",
@@ -15,7 +15,6 @@
     "lint": "eslint ",
     "fix:js": "eslint  --fix",
     "fix": "npm run fix:js && npm run format",
-    "prepare": "husky",
     "changeset": "changeset version && node .changeset/rewrite-changelog.mjs CHANGELOG.md",
     "release": "changeset publish",
     "test": "NODE_ENV=development vitest run",
@@ -40,14 +39,9 @@
     "eslint": "^9.38.0",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import": "^2.32.0",
-    "husky": "^9.1.7",
     "lint-staged": "^16.2.4",
     "prettier": "^3.6.2",
     "typescript": "^5.9.3",
     "vitest": "^4.0.3"
-  },
-  "lint-staged": {
-    "*.{js,mjs}": "eslint --cache --fix",
-    "*.{js,json,md,mjs,ts,yml}": "prettier --write"
   }
 }

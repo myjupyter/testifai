@@ -168,7 +168,7 @@ export function validateConfig(config) {
 
     const { apiKey } = config.provider.openai;
 
-    if (apiKey === '<YOUR_OPENAI_API_KEY>' || apiKey.length < 10) {
+    if (apiKey === '<YOUR_OPENAI_API_KEY>' || apiKey.length === 0) {
         throw new Error('Please set a valid OpenAI API key in your config file.');
     }
 }

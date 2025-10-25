@@ -1,0 +1,29 @@
+{
+  "name": "testifai",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Testifai monorepo with JS/TS/Go CLI and Go backend",
+  "scripts": {
+    "prepare": "husky",
+    "lint:js": "cd src/js && npm run lint",
+    "format:js": "cd src/js && npm run format",
+    "fix:js": "cd src/js && npm run fix",
+    "test:js": "cd src/js && npm run test"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.4"
+  },
+  "lint-staged": {
+    "src/js/**/*.{js,mjs}": [
+      "cd src/js && npx eslint --cache --fix"
+    ],
+    "src/js/**/*.{js,json,md,mjs,ts,yml}": [
+      "cd src/js && npx prettier --write"
+    ]
+  },
+  "workspaces": [
+    "src/js"
+  ]
+}
