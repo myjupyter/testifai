@@ -18,17 +18,11 @@ import (
 // swagger:model server.Request
 type ServerRequest struct {
 
-	// api key
-	APIKey string `json:"api_key,omitempty"`
-
 	// context
 	Context *ServerGenerateContext `json:"context,omitempty"`
 
 	// id
 	ID string `json:"id,omitempty"`
-
-	// provider
-	Provider string `json:"provider,omitempty"`
 
 	// testifai
 	Testifai *ServerTestifai `json:"testifai,omitempty"`

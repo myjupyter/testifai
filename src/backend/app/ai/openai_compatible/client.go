@@ -20,14 +20,16 @@ type Client struct {
 	providerName string
 	endpoint     string
 	model        string
+	apiKey       string
 	client       *http.Client
 }
 
-func New(providerName, endpoint, model string) *Client {
+func New(providerName, endpoint, model, apiKey string) *Client {
 	return &Client{
 		providerName: providerName,
 		endpoint:     endpoint,
 		model:        model,
+		apiKey:       apiKey,
 		client:       &http.Client{Timeout: 60 * time.Second},
 	}
 }
@@ -61,7 +63,6 @@ func (c *Client) Generate(ctx context.Context, form model.AiGenerateForm) (model
 	})
 
 	messages := []map[string]interface{}{
-
 		{"role": "user", "content": content},
 	}
 
@@ -91,7 +92,7 @@ func (c *Client) Generate(ctx context.Context, form model.AiGenerateForm) (model
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+form.ApiKey)
+	req.Header.Set("Authorization", "Bearer "+c.apiKey)
 
 	resp, err := c.client.Do(req)
 	if err != nil {
